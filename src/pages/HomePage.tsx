@@ -93,7 +93,7 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <SafetyBanner lang={lang} />
+      <SafetyBanner lang={lang} speakOnMount />
       <section className="card tilt rise">
         <p className="kicker">{t(lang, 'status')}</p>
         <p className="mb-3 text-sm text-[var(--muted)]">{t(lang, 'statusNote')}</p>

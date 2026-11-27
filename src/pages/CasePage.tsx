@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { ClockDisplay } from '../components/ClockDisplay'
@@ -14,8 +14,10 @@ import { cropLabel, lossLabel } from '../parse/reportParser'
 import { appendEvent } from '../domain/hashChain'
 import { processPhotoFile } from '../utils/photo'
 import { VoiceMic } from '../ui/VoiceMic'
+import { useSpeech } from '../speech/useSpeech'
 
 export function CasePage({ lang }: { lang: SpeechLang }) {
+  const { speak } = useSpeech(lang)
   const { id } = useParams()
   const [c, setC] = useState<CaseRecord | null>(null)
   const [profileName, setProfileName] = useState('')
@@ -24,6 +26,7 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
   const [ticketRepeat, setTicketRepeat] = useState<string[] | null>(null)
   const [waExtra, setWaExtra] = useState(false)
   const [typeFallback, setTypeFallback] = useState(false)
+  const [ticketPrompt, setTicketPrompt] = useState('')
 
   const load = async () => {
     if (!id) return
@@ -47,6 +50,45 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
     if (typeof navigator !== 'undefined' && !navigator.onLine) setTypeFallback(true)
   }, [])
 
+  const scriptLines = useMemo(() => {
+    if (!c) return [] as string[]
+    return [
+      profileName && `नमस्कार. माझे नाव ${profileName}.`,
+      c.village && `मी ${c.village} गावचा शेतकरी आहे.`,
+      c.district && `जिल्हा ${c.district}.`,
+      c.crop && `माझ्या ${cropLabel(c.crop)} पिकाचे`,
+      c.loss && `${lossLabel(c.loss)} मुळे नुकसान झाले.`,
+      c.eventTimeIso && `घटना ${c.eventTimeIso} ला झाली.`,
+      c.policyNumber && `पीक विमा क्रमांक ${c.policyNumber}.`,
+      c.mobile && `मोबाईल ${c.mobile}.`,
+      'कृपया तिकीट क्रमांक द्या.',
+    ].filter(Boolean) as string[]
+  }, [c, profileName])
+
+  const summary = scriptLines.join(' ')
+
+  const spokeIntro = useRef(false)
+  useEffect(() => {
+    spokeIntro.current = false
+  }, [id])
+
+  useEffect(() => {
+    if (!c || !summary || spokeIntro.current) return
+    spokeIntro.current = true
+    speak(t(lang, 'clockSpeak'))
+    const timer = window.setTimeout(() => speak(summary), 1200)
+    return () => window.clearTimeout(timer)
+  }, [c, summary, lang, speak])
+
+  useEffect(() => {
+    if (!ticketRepeat?.length) {
+      setTicketPrompt('')
+      return
+    }
+    speak(ticketRepeat.join(' . '))
+    setTicketPrompt(t(lang, 'ticketConfirmVoice'))
+  }, [ticketRepeat, lang, speak])
+
   if (!c) {
     return (
       <p>
@@ -54,20 +96,6 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
       </p>
     )
   }
-
-  const scriptLines = [
-    profileName && `नमस्कार. माझे नाव ${profileName}.`,
-    c.village && `मी ${c.village} गावचा शेतकरी आहे.`,
-    c.district && `जिल्हा ${c.district}.`,
-    c.crop && `माझ्या ${cropLabel(c.crop)} पिकाचे`,
-    c.loss && `${lossLabel(c.loss)} मुळे नुकसान झाले.`,
-    c.eventTimeIso && `घटना ${c.eventTimeIso} ला झाली.`,
-    c.policyNumber && `पीक विमा क्रमांक ${c.policyNumber}.`,
-    c.mobile && `मोबाईल ${c.mobile}.`,
-    'कृपया तिकीट क्रमांक द्या.',
-  ].filter(Boolean)
-
-  const summary = scriptLines.join(' ')
 
   const waUrl = () => {
     let text = summary
@@ -188,7 +216,7 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <SafetyBanner lang={lang} />
+      <SafetyBanner lang={lang} speakOnMount />
       <ClockDisplay
         eventTimeIso={c.eventTimeIso}
         lang={lang}
@@ -200,7 +228,7 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
       </p>
       <VoiceMic
         lang={lang}
-        prompt={`${t(lang, 'clockSpeak')} ${t(lang, 'ticketAsk')}`}
+        prompt={ticketPrompt || t(lang, 'ticketAsk')}
         onHeard={onHeard}
         onFallback={setTypeFallback}
       />
@@ -284,7 +312,6 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
           className="mt-2"
           onChange={(e) => void onPhoto(e.target.files?.[0] ?? null)}
         />
-        {typeFallback && (
         <div className="mt-2 flex flex-wrap gap-2">
           {(['policy', 'passbook', 'witness', 'survey'] as const).map((k) => (
             <button
@@ -314,7 +341,6 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
             </button>
           ))}
         </div>
-        )}
       </section>
       <section className="flex flex-wrap gap-3">
         <button type="button" className="btn" onClick={exportJson}>

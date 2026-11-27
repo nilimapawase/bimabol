@@ -32,7 +32,7 @@ export function useSpeech(lang: SpeechLang) {
   }, [lang])
 
   const speak = useCallback(
-    (text: string) => {
+    (text: string, opts?: { rate?: number }) => {
       setLastText(text)
       speechSynthesis.cancel()
       const voice = findVoice(lang)
@@ -43,7 +43,7 @@ export function useSpeech(lang: SpeechLang) {
       setVisibleOnly(false)
       const u = new SpeechSynthesisUtterance(text)
       u.lang = lang
-      u.rate = 0.9
+      u.rate = opts?.rate ?? 0.9
       u.voice = voice
       utterRef.current = u
       speechSynthesis.speak(u)

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { createCaseFromDraft, type ReportDraft } from '../db/caseService'
@@ -10,7 +10,15 @@ import { t } from '../i18n'
 import type { SpeechLang } from '../speech/useSpeech'
 import { VoiceMic } from '../ui/VoiceMic'
 
-type Step = 'who' | 'setup' | 'report' | 'gaps' | 'confirm'
+type Step = 'who' | 'otherName' | 'setup' | 'report' | 'gaps' | 'confirm'
+
+function readbackLine(draft: ReportDraft, lang: SpeechLang): string {
+  const crop = draft.crop ? cropLabel(draft.crop) : '—'
+  const village = draft.village ?? '—'
+  const loss = draft.loss ? lossLabel(draft.loss) : '—'
+  const time = draft.eventTimeIso ?? '—'
+  return `${t(lang, 'readback')}: ${t(lang, 'lblCrop')} ${crop}, ${t(lang, 'lblVillage')} ${village}, ${t(lang, 'lblLoss')} ${loss}, ${t(lang, 'lblTime')} ${time}. ${t(lang, 'right')}`
+}
 
 function withParse(base: ReportDraft, text: string): ReportDraft {
   const p = parseFreeReport(text)
@@ -89,20 +97,19 @@ export function ReportPage({
     nav(`/case/${c.id}`)
   }
 
-  const prompt =
-    step === 'who'
-      ? t(lang, 'whoQ')
-      : step === 'setup'
-        ? t(lang, 'setupSay')
-        : step === 'report'
-          ? t(lang, 'sayLoss')
-          : step === 'gaps'
-            ? gapField === 'crop'
-              ? t(lang, 'askCrop')
-              : gapField === 'village'
-                ? t(lang, 'askVillage')
-                : t(lang, 'askTime')
-            : `${t(lang, 'readback')}. ${t(lang, 'right')}`
+  const prompt = useMemo(() => {
+    if (step === 'who') return t(lang, 'whoQ')
+    if (step === 'otherName') return t(lang, 'askOtherName')
+    if (step === 'setup') return t(lang, 'setupSay')
+    if (step === 'report') return t(lang, 'sayLoss')
+    if (step === 'gaps') {
+      if (gapField === 'crop') return t(lang, 'askCrop')
+      if (gapField === 'village') return t(lang, 'askVillage')
+      return t(lang, 'askTime')
+    }
+    const base = readbackLine(draft, lang)
+    return draft.special ? `${t(lang, 'specialRules')} ${base}` : base
+  }, [step, gapField, draft, lang])
 
   const onHeard = (text: string) => {
     const command = voiceCommand(text)
@@ -122,7 +129,24 @@ export function ReportPage({
     if (step === 'who') {
       const who = classifyWho(text)
       if (!who) return
-      setDraft((d) => ({ ...d, forOther: who === 'other' }))
+      if (who === 'mine') {
+        setDraft((d) => ({ ...d, forOther: false }))
+        setStep('setup')
+        return
+      }
+      const stripped = text
+        .replace(/दुसर[ा्याचे]?|दुसऱ्या|शेतकरी|फार्मर|other|someone/gi, ' ')
+        .trim()
+      setDraft((d) => ({
+        ...d,
+        forOther: true,
+        otherName: stripped.length > 2 ? stripped : d.otherName,
+      }))
+      setStep(stripped.length > 2 ? 'setup' : 'otherName')
+      return
+    }
+    if (step === 'otherName') {
+      setDraft((d) => ({ ...d, forOther: true, otherName: text.trim() }))
       setStep('setup')
       return
     }
@@ -180,7 +204,7 @@ export function ReportPage({
 
   return (
     <div className="card rise flex flex-col gap-4">
-      <SafetyBanner lang={lang} />
+      <SafetyBanner lang={lang} speakOnMount />
       <VoiceMic lang={lang} prompt={prompt} onHeard={onHeard} onFallback={setAllowType} />
       {step === 'who' && allowType && (
         <>

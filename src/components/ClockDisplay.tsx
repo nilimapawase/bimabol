@@ -98,7 +98,12 @@ export function ClockDisplay({
         </div>
       </div>
       <div className="clock-copy">
-        <p className="kicker">{t(lang, 'clockTitle')}</p>
+        <p className="kicker">
+          <span className="clock-icon" aria-hidden>
+            ⏳
+          </span>{' '}
+          {t(lang, 'clockTitle')}
+        </p>
         <p className="text-sm text-[var(--muted)]">
           {state.late ? t(lang, 'timeOver') : t(lang, 'timeLeft')} · {t(lang, 'clockNote')}
         </p>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { t } from '../i18n'
 import { parseConfirmIntent } from '../flow/intents'
+import { voiceCommand } from '../flow/reportVoice'
 import { PrivacyNote, shouldBlockMic } from '../speech/PrivacyNote'
 import { mostlyLatin } from '../speech/latinHeavy'
 import { useRecognition } from '../speech/useRecognition'
@@ -91,6 +92,21 @@ export function VoiceMic({ lang, prompt, onHeard, onFallback }: Props) {
       }
       sttRetry.current = 0
       if (text) {
+        const cmd = voiceCommand(text)
+        if (cmd === 'stop') {
+          rec.clearTranscript()
+          return
+        }
+        if (cmd === 'slow') {
+          speak(prompt, { rate: 0.65 })
+          rec.clearTranscript()
+          return
+        }
+        if (parseConfirmIntent(text) === 'repeat') {
+          speak(prompt)
+          rec.clearTranscript()
+          return
+        }
         if (pending && parseConfirmIntent(text) === 'yes') {
           heard.current(pending)
           setPending('')

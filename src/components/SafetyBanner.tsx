@@ -1,7 +1,22 @@
+import { useEffect, useRef } from 'react'
 import { t } from '../i18n'
-import type { SpeechLang } from '../speech/useSpeech'
+import { useSpeech, type SpeechLang } from '../speech/useSpeech'
 
-export function SafetyBanner({ lang }: { lang: SpeechLang }) {
+export function SafetyBanner({
+  lang,
+  speakOnMount,
+}: {
+  lang: SpeechLang
+  speakOnMount?: boolean
+}) {
+  const { speak } = useSpeech(lang)
+  const spoke = useRef(false)
+  useEffect(() => {
+    if (!speakOnMount || spoke.current) return
+    spoke.current = true
+    speak(`${t(lang, 'safety')} ${t(lang, 'notGov')}`)
+  }, [lang, speak, speakOnMount])
+
   return (
     <aside className="card tilt">
       <p className="kicker">{t(lang, 'limit')}</p>

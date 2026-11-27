@@ -59,6 +59,7 @@ export async function createCaseFromDraft(
     loss: draft.loss ?? parsed.loss,
     area: draft.area ?? parsed.area,
     eventTimeIso,
+    discoveryTimeIso: nowIso,
     evidence: {
       photos: false,
       policy: false,

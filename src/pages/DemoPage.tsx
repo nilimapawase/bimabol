@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ParseKind } from '../config/steps'
+import { DEMO_HI_REPORTS, DEMO_MR_REPORTS } from '../config/demoReportSentences'
 import { parseAnswer } from '../parse/index'
 import { parseFreeReport } from '../parse/reportParser'
 import { t } from '../i18n'
@@ -21,10 +22,10 @@ type Example = {
 
 const MR_EXAMPLES: Example[] = [
   { label: 'संख्या', text: 'पन्नास', kind: 'digits' },
-  { label: 'अंक मालिका', text: 'नऊ आठ', kind: 'digits' },
+  { label: 'अंक', text: 'नऊ आठ', kind: 'digits' },
   { label: 'वेळ', text: 'आज सकाळी', kind: 'time' },
   { label: 'वेळ', text: 'काल रात्री', kind: 'time' },
-  { label: 'संकेतशब्द', text: 'मी शाळेत जातो', kind: 'keyword', keywords: 'साला' },
+  { label: 'शब्द', text: 'मी शाळेत जातो', kind: 'keyword', keywords: 'शाळा' },
 ]
 
 const HI_EXAMPLES: Example[] = [
@@ -35,36 +36,23 @@ const HI_EXAMPLES: Example[] = [
   { label: 'कीवर्ड', text: 'मैं स्कूल जाता हूँ', kind: 'keyword', keywords: 'स्कूल' },
 ]
 
-const EN_EXAMPLES: Example[] = [
-  { label: 'number', text: 'fifty', kind: 'digits' },
-  { label: 'digits', text: 'nine eight', kind: 'digits' },
-  { label: 'time', text: 'today morning', kind: 'time' },
-  { label: 'time', text: 'yesterday night', kind: 'time' },
-  { label: 'keyword', text: 'going to school', kind: 'keyword', keywords: 'school' },
-]
-
-function ExampleGroup({
+function SentenceList({
   title,
   items,
   onPick,
 }: {
   title: string
-  items: Example[]
-  onPick: (ex: Example) => void
+  items: readonly string[]
+  onPick: (text: string) => void
 }) {
   return (
     <div>
-      <h3 className="text-lg font-semibold text-slate-200">{title}</h3>
+      <h3 className="text-lg font-semibold">{title}</h3>
       <ul className="mt-2 flex flex-col gap-2">
-        {items.map((ex) => (
-          <li key={`${title}-${ex.text}`}>
-            <button
-              type="button"
-              onClick={() => onPick(ex)}
-              className="w-full rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-left text-lg hover:border-sky-500"
-            >
-              <span className="text-slate-500">{ex.label}: </span>
-              {ex.text}
+        {items.map((text) => (
+          <li key={text}>
+            <button type="button" className="btn w-full text-left" onClick={() => onPick(text)}>
+              {text}
             </button>
           </li>
         ))}
@@ -76,23 +64,20 @@ function ExampleGroup({
 export function DemoPage({ lang }: { lang: SpeechLang }) {
   const [input, setInput] = useState('')
   const [kind, setKind] = useState<ParseKind>('digits')
-  const [keywords, setKeywords] = useState('साला')
+  const [keywords, setKeywords] = useState('शाळा')
   const [result, setResult] = useState<unknown>(null)
 
   const runParse = () => {
     const kws =
-      kind === 'keyword'
-        ? keywords.split(/[\s,]+/).filter(Boolean)
-        : undefined
+      kind === 'keyword' ? keywords.split(/[\s,]+/).filter(Boolean) : undefined
     const parsed = parseAnswer(input, kind, kws)
     setResult(parsed)
   }
 
-  const pickExample = (ex: Example) => {
-    setInput(ex.text)
-    setKind(ex.kind)
-    if (ex.keywords) setKeywords(ex.keywords)
-    setResult(null)
+  const pickReport = (text: string) => {
+    setInput(text)
+    setKind('text')
+    setResult(parseFreeReport(text))
   }
 
   return (
@@ -100,18 +85,36 @@ export function DemoPage({ lang }: { lang: SpeechLang }) {
       <h1 className="text-2xl font-bold">{t(lang, 'demoTitle')}</h1>
       <p className="text-lg text-[var(--muted)]">{t(lang, 'demoHint')}</p>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <ExampleGroup title="मराठी (5)" items={MR_EXAMPLES} onPick={pickExample} />
-        <ExampleGroup title="हिंदी (5)" items={HI_EXAMPLES} onPick={pickExample} />
-        <ExampleGroup title="English (5)" items={EN_EXAMPLES} onPick={pickExample} />
-      </div>
+      <section className="card">
+        <h2 className="text-xl font-bold">{t(lang, 'demoReport')}</h2>
+        <p className="text-sm text-[var(--muted)]">10 Marathi + 10 Hindi — tap to inject into the parser.</p>
+        <div className="mt-4 grid gap-6 sm:grid-cols-2">
+          <SentenceList title="मराठी (10)" items={DEMO_MR_REPORTS} onPick={pickReport} />
+          <SentenceList title="हिंदी (10)" items={DEMO_HI_REPORTS} onPick={pickReport} />
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-2">
+        <MicroDemo title="मराठी micro (5)" items={MR_EXAMPLES} onPick={(ex) => {
+          setInput(ex.text)
+          setKind(ex.kind)
+          if (ex.keywords) setKeywords(ex.keywords)
+          setResult(null)
+        }} />
+        <MicroDemo title="हिंदी micro (5)" items={HI_EXAMPLES} onPick={(ex) => {
+          setInput(ex.text)
+          setKind(ex.kind)
+          if (ex.keywords) setKeywords(ex.keywords)
+          setResult(null)
+        }} />
+      </section>
 
       <label className="flex flex-col gap-2">
         <span>{t(lang, 'parseMode')}</span>
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as ParseKind)}
-          className="rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-xl"
+          className="input"
         >
           {DEMO_KINDS.map((k) => (
             <option key={k.value} value={k.value}>
@@ -124,54 +127,48 @@ export function DemoPage({ lang }: { lang: SpeechLang }) {
       {kind === 'keyword' && (
         <label className="flex flex-col gap-2">
           <span>{t(lang, 'keywords')}</span>
-          <input
-            type="text"
-            value={keywords}
-            onChange={(e) => setKeywords(e.target.value)}
-            className="rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-xl"
-          />
+          <input type="text" value={keywords} onChange={(e) => setKeywords(e.target.value)} className="input" />
         </label>
       )}
 
       <label className="flex flex-col gap-2">
         <span>{t(lang, 'input')}</span>
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          rows={4}
-          className="rounded-xl border border-slate-600 bg-slate-900 px-4 py-3 text-xl"
-        />
+        <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={4} className="input" />
       </label>
 
-      <button
-        type="button"
-        onClick={runParse}
-        className="rounded-xl bg-sky-700 py-4 text-xl font-semibold"
-      >
+      <button type="button" onClick={runParse} className="btn primary">
         {t(lang, 'parseBtn')}
       </button>
 
       <pre className="overflow-x-auto rounded-xl border border-slate-700 bg-slate-950 p-4 text-base">
         {JSON.stringify(result, null, 2)}
       </pre>
+    </div>
+  )
+}
 
-      <section className="mt-6 border-t border-slate-700 pt-4">
-        <h2 className="text-xl font-bold">{t(lang, 'demoReport')}</h2>
-        <p className="text-slate-400">डेमो डेटा — parser JSON below.</p>
-        <button
-          type="button"
-          className="btn primary mt-2"
-          onClick={() =>
-            setResult(
-              parseFreeReport(
-                'आज सकाळी गारपीट झाली, माझ्या सोयाबीनचे नुकसान झाले, गाव खेडगाव.',
-              ),
-            )
-          }
-        >
-          {t(lang, 'soybean')}
-        </button>
-      </section>
+function MicroDemo({
+  title,
+  items,
+  onPick,
+}: {
+  title: string
+  items: Example[]
+  onPick: (ex: Example) => void
+}) {
+  return (
+    <div className="card">
+      <h3 className="font-semibold">{title}</h3>
+      <ul className="mt-2 flex flex-col gap-2">
+        {items.map((ex) => (
+          <li key={ex.text}>
+            <button type="button" className="btn w-full text-left" onClick={() => onPick(ex)}>
+              <span className="text-[var(--muted)]">{ex.label}: </span>
+              {ex.text}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }

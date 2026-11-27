@@ -7,6 +7,8 @@ export type VoiceCommand =
   | 'marathi'
   | 'call'
   | 'changeVillage'
+  | 'slow'
+  | 'stop'
   | null
 
 export function voiceCommand(raw: string): VoiceCommand {
@@ -15,6 +17,8 @@ export function voiceCommand(raw: string): VoiceCommand {
   if (/\benglish\b/i.test(raw)) return 'english'
   if (/मराठी/.test(raw)) return 'marathi'
   if (/फोन करा|call now|कॉल कर/i.test(raw)) return 'call'
+  if (/हळू|धीरे|slow/i.test(raw)) return 'slow'
+  if (/थांबा|थांब|stop|ruk/i.test(raw)) return 'stop'
   return null
 }
 

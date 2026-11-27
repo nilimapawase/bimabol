@@ -71,7 +71,15 @@ After you change code: run `docker compose up --build` again to refresh the cont
 
 ## Demo data
 
-Profile **डेमो डेटा — राजू पाटील** (9876543210). On **`/demo`**, tap sentences to test the parser without a mic. The same **10 Marathi + 10 Hindi** report sentences live in `src/parse/reportParser.test.ts` (plus 5 mixed-language checks).
+Profile **डेमो डेटा — राजू पाटील** (9876543210). On **`/demo`**, tap **10 Marathi + 10 Hindi** report sentences (`src/config/demoReportSentences.ts`) to inject parser output without a mic. Parser regression tests use the same sentences in `src/parse/reportParser.test.ts`.
+
+### End-to-end voice checklist (manual, HTTPS)
+
+1. Home → **नुकसान सांगा** → Report: who → setup (**हो**) → speak loss → read-back (**हो**).
+2. Case: hear clock + 14447 script; **Call 14447**; say ticket → character repeat → **हो**.
+3. Evidence: say **फोटो काढले** or tap checklist; **Share** / **Print** (Self-maintained farmer record).
+4. Reload: clock and record persist; reminders fire once per threshold on the case screen.
+5. Offline banner: type fallback only; clock still runs.
 
 **Marathi (10):**
 
