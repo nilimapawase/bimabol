@@ -32,8 +32,15 @@ function shiftDay(
   return toIso(shifted.y, shifted.m, shifted.d, hour, min)
 }
 
-function hasAny(s: string, needles: string[]): boolean {
-  return needles.some((n) => s.includes(n))
+function hasToken(raw: string, words: string[]): boolean {
+  const tokens = raw
+    .split(/[\s,.:;!?।]+/)
+    .map((t) => foldDevanagari(t))
+    .filter(Boolean)
+  return words.some((w) => {
+    const fw = foldDevanagari(w)
+    return tokens.some((t) => t === fw || t.startsWith(fw))
+  })
 }
 
 /** Earliest plausible instant in IST for spoken time phrase. */
@@ -53,27 +60,17 @@ export function parseEventTimePhrase(
   }
 
   let dayOffset = 0
-  if (hasAny(dev, ['आज']) || hasAny(lat, ['today'])) dayOffset = 0
-  else if (hasAny(dev, ['काल', 'कल']) || hasAny(lat, ['yesterday', 'कल'])) dayOffset = -1
-  else if (hasAny(dev, ['परवा', 'परसों']) || hasAny(lat, ['day before'])) dayOffset = -2
+  if (hasToken(raw, ['आज', 'today'])) dayOffset = 0
+  else if (hasToken(raw, ['काल', 'कल', 'yesterday'])) dayOffset = -1
+  else if (hasToken(raw, ['परवा', 'परसों'])) dayOffset = -2
   else return null
 
   let hour = 6
-  let min = 0
-  if (
-    hasAny(dev, ['सकाळ', 'सकाळी', 'सुबह', 'पहाट']) ||
-    hasAny(lat, ['morning', 'subah'])
-  )
-    hour = 6
-  else if (hasAny(dev, ['दुपार', 'दोपहर']) || hasAny(lat, ['noon', 'afternoon', 'dopahar']))
-    hour = 12
-  else if (
-    hasAny(dev, ['संध्याकाळ', 'शाम']) ||
-    hasAny(lat, ['evening', 'sham'])
-  )
-    hour = 17
-  else if (hasAny(dev, ['रात', 'रात्र', 'रात्री']) || hasAny(lat, ['night']))
-    hour = 19
+  const min = 0
+  if (hasToken(raw, ['सकाळ', 'सकाळी', 'सुबह', 'पहाट', 'morning'])) hour = 6
+  else if (hasToken(raw, ['दुपार', 'दुपारी', 'दोपहर', 'afternoon'])) hour = 12
+  else if (hasToken(raw, ['संध्याकाळ', 'संध्याकाळी', 'शाम', 'evening'])) hour = 17
+  else if (hasToken(raw, ['रात', 'रात्र', 'रात्री', 'night'])) hour = 19
 
   return shiftDay(now, dayOffset, hour, min)
 }

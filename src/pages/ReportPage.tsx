@@ -143,7 +143,7 @@ export function ReportPage() {
       )}
       {step === 'report' && (
         <>
-          <p>काय झाले ते सांगा (टाइप करा किंवा मिक वापरा).</p>
+          <p>काय झाले ते सांगा (टाइप करा किंवा माइक वापरा).</p>
           <textarea
             className="input min-h-32"
             value={freeText}

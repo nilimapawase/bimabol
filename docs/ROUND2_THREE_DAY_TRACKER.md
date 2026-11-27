@@ -31,7 +31,7 @@ Update this file after every step: tick the box, set **Completed at**, then reco
 | D1-04 | Local `npm install`, `npm run build`, `npm test` | You | [x] | 2026-11-27 | 17 tests pass |
 | D1-05 | **Gate 1** — secret scan, commit, push | You | [x] | 2026-11-27 | https://github.com/nilimapawase/bimabol |
 | D1-06 | Chat **A2** case, ticket, evidence, export | Agent | [x] | 2026-11-27 | |
-| D1-07 | **Gate 2** — typed full flow (§10.1) | You | [x] | 2026-11-27 | Home, /report, /demo, /about verified in browser (5173). Full ticket/photo path still click-through. |
+| D1-07 | **Gate 2** — typed full flow (§10.1) | You | [x] | 2026-11-27 | Browser: report → case, script, ticket AB12CD char-by-char, integrity, tamper warning. |
 | D1-08 | Chat **C** — Ask review | Ask | [ ] | | Runbook **§8.4** (Grok 4.7) |
 | D1-09 | Chat **C** — Agent fix critical/high | Agent | [ ] | | Runbook **§8.4** fix block |
 | D1-10 | **Gate 3** — Docker clean clone (§10.2) | You | [ ] | | Runbook **§GATE3** |
