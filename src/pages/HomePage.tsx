@@ -55,7 +55,6 @@ export function HomePage() {
                 className={`btn w-full text-left ${activeId === p.id ? 'primary' : ''}`}
                 onClick={() => switchProfile(p.id)}
               >
-                {p.demo ? 'डेमो डेटा — ' : ''}
                 {p.name} ({p.mobile || '—'})
               </button>
             </li>
