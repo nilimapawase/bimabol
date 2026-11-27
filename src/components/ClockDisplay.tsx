@@ -1,33 +1,31 @@
-import { clockState } from '../domain/clock'
+import { clockState, type ClockBand } from '../domain/clock'
+import { t, type CopyKey } from '../i18n'
+import type { SpeechLang } from '../speech/useSpeech'
 
-const ICON: Record<string, string> = {
-  green: '🟢',
-  amber: '🟠',
-  red: '🔴',
-  late: '⏱️',
+const WORD: Record<ClockBand, CopyKey> = {
+  green: 'clockGreen',
+  amber: 'clockAmber',
+  red: 'clockRed',
+  late: 'clockLate',
 }
 
-type Props = { eventTimeIso: string }
+type Props = { eventTimeIso: string; lang: SpeechLang }
 
-export function ClockDisplay({ eventTimeIso }: Props) {
-  const ms = Date.parse(eventTimeIso)
-  const state = clockState(ms)
-  const sign = state.late ? '−' : ''
+export function ClockDisplay({ eventTimeIso, lang }: Props) {
+  const state = clockState(Date.parse(eventTimeIso))
   return (
-    <div
-      className="rounded-xl border-2 border-slate-600 bg-slate-900 px-4 py-3"
-      aria-live="polite"
-    >
-      <p className="text-lg font-semibold">
-        {ICON[state.band]} ७२ तासांचे घड्याळ — {sign}
-        {state.hours} तास {state.minutes} मिनिटे{' '}
-        {state.late ? '(उशीर झाला असू शकतो)' : 'उरले'}
-      </p>
-      {state.late && (
-        <p className="mt-2 text-base text-amber-200">
-          वेळ निघून गेली असू शकते, तरीही आत्ताच १४४४७ वर कळवा आणि नोंद ठेवा.
+    <div className={`clock card tilt band-${state.band}`} aria-live="polite">
+      <div>
+        <p className="kicker">{t(lang, 'clockTitle')}</p>
+        <strong>
+          {state.late ? '−' : ''}
+          {state.hours} {t(lang, 'hours')} {state.minutes} {t(lang, 'mins')}
+        </strong>
+        <p className="text-sm text-[var(--muted)]">
+          {state.late ? t(lang, 'timeOver') : t(lang, 'timeLeft')} · {t(lang, 'clockNote')}
         </p>
-      )}
+      </div>
+      <span className={`pill ${state.band}`}>{t(lang, WORD[state.band])}</span>
     </div>
   )
 }

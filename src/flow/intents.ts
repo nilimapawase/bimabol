@@ -46,5 +46,4 @@ export function parseConfirmIntent(raw: string): ConfirmIntent {
   if (!hits.length) return null
   hits.sort((a, b) => b.len - a.len)
   return hits[0]!.intent
-  return null
 }

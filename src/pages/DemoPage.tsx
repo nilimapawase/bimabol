@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { ParseKind } from '../config/steps'
 import { parseAnswer } from '../parse/index'
 import { parseFreeReport } from '../parse/reportParser'
+import { t } from '../i18n'
+import type { SpeechLang } from '../speech/useSpeech'
 
 const DEMO_KINDS: { value: ParseKind; label: string }[] = [
   { value: 'text', label: 'text' },
@@ -71,7 +73,7 @@ function ExampleGroup({
   )
 }
 
-export function DemoPage() {
+export function DemoPage({ lang }: { lang: SpeechLang }) {
   const [input, setInput] = useState('')
   const [kind, setKind] = useState<ParseKind>('digits')
   const [keywords, setKeywords] = useState('साला')
@@ -95,10 +97,8 @@ export function DemoPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">पार्सर डेमो / Parser demo</h1>
-      <p className="text-lg text-slate-400">
-        No mic here. Paste text or tap an example, then Parse.
-      </p>
+      <h1 className="text-2xl font-bold">{t(lang, 'demoTitle')}</h1>
+      <p className="text-lg text-[var(--muted)]">{t(lang, 'demoHint')}</p>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <ExampleGroup title="मराठी (5)" items={MR_EXAMPLES} onPick={pickExample} />
@@ -107,7 +107,7 @@ export function DemoPage() {
       </div>
 
       <label className="flex flex-col gap-2">
-        <span>Parse mode</span>
+        <span>{t(lang, 'parseMode')}</span>
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as ParseKind)}
@@ -123,7 +123,7 @@ export function DemoPage() {
 
       {kind === 'keyword' && (
         <label className="flex flex-col gap-2">
-          <span>Keywords (comma or space)</span>
+          <span>{t(lang, 'keywords')}</span>
           <input
             type="text"
             value={keywords}
@@ -134,7 +134,7 @@ export function DemoPage() {
       )}
 
       <label className="flex flex-col gap-2">
-        <span>Input</span>
+        <span>{t(lang, 'input')}</span>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -148,7 +148,7 @@ export function DemoPage() {
         onClick={runParse}
         className="rounded-xl bg-sky-700 py-4 text-xl font-semibold"
       >
-        Parse / पार्स करा
+        {t(lang, 'parseBtn')}
       </button>
 
       <pre className="overflow-x-auto rounded-xl border border-slate-700 bg-slate-950 p-4 text-base">
@@ -156,7 +156,7 @@ export function DemoPage() {
       </pre>
 
       <section className="mt-6 border-t border-slate-700 pt-4">
-        <h2 className="text-xl font-bold">२५ वाक्य पार्स (report)</h2>
+        <h2 className="text-xl font-bold">{t(lang, 'demoReport')}</h2>
         <p className="text-slate-400">डेमो डेटा — parser JSON below.</p>
         <button
           type="button"
@@ -169,7 +169,7 @@ export function DemoPage() {
             )
           }
         >
-          Test soybean hail sentence
+          {t(lang, 'soybean')}
         </button>
       </section>
     </div>

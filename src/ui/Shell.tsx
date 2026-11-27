@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import type { SpeechLang } from '../speech/useSpeech'
-import { OFFLINE_BANNER_MR } from '../constants/copy'
+import { t } from '../i18n'
 
 type Props = {
   lang: SpeechLang
@@ -11,16 +11,18 @@ type Props = {
   resetKey?: number
 }
 
-export function Shell({
-  lang,
-  onLangChange,
-  children,
-  onDeleteAll,
-}: Props) {
+export function Shell({ lang, onLangChange, children, onDeleteAll }: Props) {
   const [online, setOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   )
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const location = useLocation()
+  const links = [
+    { to: '/', label: t(lang, 'navHome') },
+    { to: '/report', label: t(lang, 'navReport') },
+    { to: '/demo', label: t(lang, 'navDemo') },
+    { to: '/about', label: t(lang, 'navAbout') },
+  ]
 
   useEffect(() => {
     const on = () => setOnline(true)
@@ -33,69 +35,76 @@ export function Shell({
     }
   }, [])
 
-  const link = (to: string, label: string) => (
-    <Link
-      to={to}
-      className={
-        location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
-          ? 'text-sky-400 underline'
-          : 'text-slate-300'
-      }
-    >
-      {label}
-    </Link>
-  )
+  const active = (to: string) =>
+    location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-4 p-4 text-xl">
+    <div className="app-shell">
       {!online && (
-        <div
-          className="rounded-lg border border-amber-500 bg-amber-950 px-4 py-3 text-lg text-amber-100"
-          role="status"
-        >
-          {OFFLINE_BANNER_MR}
+        <div className="card" role="status">
+          {t(lang, 'offline')}
         </div>
       )}
-
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 pb-4">
-        <nav className="flex flex-wrap gap-3 text-lg font-semibold">
-          {link('/', 'मुख्य')}
-          {link('/report', 'नुकसान')}
-          {link('/demo', 'डेमो')}
-          {link('/about', 'About')}
+      <header className="flex flex-col gap-3">
+        <div className="brand">
+          <Link to="/" className="brand-mark">
+            <span className="brand-seal">७२</span>
+            <span>
+              <h1>BimaBol</h1>
+              <p>{t(lang, 'brandSub')}</p>
+            </span>
+          </Link>
+          <label className="lang-row">
+            <span className="sr-only">भाषा</span>
+            <select
+              aria-label="भाषा"
+              value={lang}
+              onChange={(e) => onLangChange(e.target.value as SpeechLang)}
+            >
+              <option value="mr-IN">मराठी</option>
+              <option value="hi-IN">हिंदी</option>
+              <option value="en-IN">English</option>
+            </select>
+          </label>
+        </div>
+        <nav className="nav-row" aria-label="मुख्य मार्ग">
+          {links.map((l) => (
+            <Link key={l.to} to={l.to} className={active(l.to) ? 'active' : ''}>
+              {l.label}
+            </Link>
+          ))}
         </nav>
-
-        <label className="flex items-center gap-2 text-base">
-          <span className="text-slate-400">भाषा</span>
-          <select
-            value={lang}
-            onChange={(e) => onLangChange(e.target.value as SpeechLang)}
-            className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-lg"
-          >
-            <option value="mr-IN">mr-IN</option>
-            <option value="hi-IN">hi-IN</option>
-            <option value="en-IN">en-IN</option>
-          </select>
-        </label>
       </header>
-
-      <main className="flex flex-1 flex-col gap-4">{children}</main>
-
-      <footer className="flex flex-wrap gap-4 border-t border-slate-700 pt-4">
-        <button
-          type="button"
-          onClick={onDeleteAll}
-          className="rounded-xl border-2 border-red-500 bg-red-950/40 px-5 py-4 text-lg font-semibold text-red-300"
-        >
-          सर्व काढून टाका
-        </button>
-        <a
-          href="tel:14447"
-          className="rounded-xl border-2 border-emerald-500 bg-emerald-950/40 px-5 py-4 text-lg font-semibold text-emerald-200"
-        >
-          Call 14447
-        </a>
-      </footer>
+      <main className="stage flex flex-1 flex-col gap-4">{children}</main>
+      <div className="dock">
+        {confirmDelete ? (
+          <>
+            <button type="button" className="danger" onClick={() => setConfirmDelete(false)}>
+              {t(lang, 'no')}
+            </button>
+            <button
+              type="button"
+              className="call"
+              onClick={() => {
+                setConfirmDelete(false)
+                onDeleteAll()
+              }}
+            >
+              {t(lang, 'deleteYes')}
+            </button>
+          </>
+        ) : (
+          <>
+            <button type="button" className="danger" onClick={() => setConfirmDelete(true)}>
+              {t(lang, 'delete')}
+            </button>
+            <a className="call" href="tel:14447">
+              {t(lang, 'call')}
+            </a>
+          </>
+        )}
+      </div>
+      {confirmDelete && <p className="text-center text-sm text-[var(--gold)]">{t(lang, 'deleteAsk')}</p>}
     </div>
   )
 }

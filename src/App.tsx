@@ -11,7 +11,11 @@ import { AboutPage } from './pages/AboutPage'
 import { PrintPage } from './pages/PrintPage'
 
 function App() {
-  const [lang, setLang] = useState<SpeechLang>('mr-IN')
+  const [lang, setLang] = useState<SpeechLang>(() => {
+    const saved = sessionStorage.getItem('bimabol-lang')
+    if (saved === 'mr-IN' || saved === 'hi-IN' || saved === 'en-IN') return saved
+    return 'mr-IN'
+  })
   const [resetKey, setResetKey] = useState(0)
 
   const deleteEverything = () => {
@@ -21,17 +25,20 @@ function App() {
   return (
     <Shell
       lang={lang}
-      onLangChange={setLang}
+      onLangChange={(next) => {
+        sessionStorage.setItem('bimabol-lang', next)
+        setLang(next)
+      }}
       onDeleteAll={deleteEverything}
       resetKey={resetKey}
     >
       <Routes>
-        <Route path="/" element={<HomePage key={resetKey} />} />
-        <Route path="/report" element={<ReportPage key={resetKey} />} />
-        <Route path="/case/:id" element={<CasePage />} />
-        <Route path="/case/:id/print" element={<PrintPage />} />
-        <Route path="/demo" element={<DemoPage />} />
-        <Route path="/about" element={<AboutPage />} />
+        <Route path="/" element={<HomePage key={resetKey} lang={lang} />} />
+        <Route path="/report" element={<ReportPage key={resetKey} lang={lang} />} />
+        <Route path="/case/:id" element={<CasePage lang={lang} />} />
+        <Route path="/case/:id/print" element={<PrintPage lang={lang} />} />
+        <Route path="/demo" element={<DemoPage lang={lang} />} />
+        <Route path="/about" element={<AboutPage lang={lang} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Shell>

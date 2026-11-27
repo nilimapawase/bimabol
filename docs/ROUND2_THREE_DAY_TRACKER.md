@@ -8,14 +8,15 @@ Update this file after every step: tick the box, set **Completed at**, then reco
 
 | Metric | Value |
 |--------|--------|
-| **Round 2 overall** | **11 / 28** complete |
+| **Round 2 overall** | **12 / 28** complete |
 | **Day 1 — Fri 27 Nov 2026** | **11 / 12** |
-| **Day 2 — Sat 28 Nov** | **0 / 8** |
+| **Day 2 — Sat 28 Nov** | **1 / 8** |
 | **Day 3 — Sun 29 Nov** | **0 / 6** |
 | **Buffer — Mon 30 Nov** | **0 / 2** |
 
 **Deadline:** Mon 30 Nov 2026, 11:59 PM IST (submit earlier if possible: Sun night or Mon by 6 PM)  
 **Repo name:** `bimabol` (public GitHub)  
+**Local app:** http://localhost:5173 only (8080 on this PC is Oracle, not BimaBol)  
 **Project folder:** `D:\voice-kit`  
 **Prompts:** [TODAY_PROMPT_RUNBOOK.md](TODAY_PROMPT_RUNBOOK.md)
 
@@ -46,7 +47,7 @@ Update this file after every step: tick the box, set **Completed at**, then reco
 |----|------|-------|------|--------------|-------|
 | D2-01 | Deploy **Vercel** (§11 Master Plan) | You | [ ] | | HTTPS for mic/camera |
 | D2-02 | **Android voice** test (§10.3) on Vercel URL | You | [ ] | | |
-| D2-03 | **Voice fix** chats as needed (§8.9) | Agent | [ ] | | One issue = one chat |
+| D2-03 | **Voice fix** chats as needed (§8.9) | Agent | [x] | 2026-11-27 | `/report` and case ticket/evidence are voice-first. Typed fallback after two misses. Phone test still D2-02. |
 | D2-04 | Re-run Gate 2 items that broke on phone | You | [ ] | | |
 | D2-05 | **Optional Chat D** weather (§8.5) | Agent | [ ] | | Skip if behind |
 | D2-06 | Docker / CSP spot-check on production build | You | [ ] | | DevTools Console |

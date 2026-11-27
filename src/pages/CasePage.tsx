@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { ClockDisplay } from '../components/ClockDisplay'
-import { INTEGRITY_BAD, INTEGRITY_OK } from '../constants/copy'
+import { evidenceFromSpeech, spokenTicket } from '../flow/reportVoice'
+import { parseConfirmIntent } from '../flow/intents'
+import { t } from '../i18n'
+import type { SpeechLang } from '../speech/useSpeech'
 import { verifyChain } from '../domain/hashChain'
 import { db, getActiveProfileId } from '../db/database'
 import { saveTicket, validateTicket } from '../db/caseService'
@@ -10,8 +13,9 @@ import type { CaseRecord } from '../db/types'
 import { cropLabel, lossLabel } from '../parse/reportParser'
 import { appendEvent } from '../domain/hashChain'
 import { processPhotoFile } from '../utils/photo'
+import { VoiceMic } from '../ui/VoiceMic'
 
-export function CasePage() {
+export function CasePage({ lang }: { lang: SpeechLang }) {
   const { id } = useParams()
   const [c, setC] = useState<CaseRecord | null>(null)
   const [profileName, setProfileName] = useState('')
@@ -38,7 +42,7 @@ export function CasePage() {
   if (!c) {
     return (
       <p>
-        प्रकरण सापडले नाही. <Link to="/">मुख्य पृष्ठ</Link>
+        {t(lang, 'caseMissing')} <Link to="/">{t(lang, 'navHome')}</Link>
       </p>
     )
   }
@@ -87,9 +91,40 @@ export function CasePage() {
     window.open(waUrl(), '_blank', 'noopener,noreferrer')
   }
 
+  const onHeard = (text: string) => {
+    const kind = evidenceFromSpeech(text)
+    if (kind === 'photos') {
+      void (async () => {
+        const ev = await appendEvent(c.events, 'evidence_added', { kind: 'photo' }, new Date().toISOString())
+        const next = { ...c, evidence: { ...c.evidence, photos: true }, events: [...c.events, ev] }
+        await db.cases.put(next)
+        setC(next)
+        setOk(await verifyChain(next.events))
+      })()
+      return
+    }
+    if (kind) {
+      void (async () => {
+        const ev = await appendEvent(c.events, 'evidence_added', { kind }, new Date().toISOString())
+        const next = { ...c, evidence: { ...c.evidence, [kind]: true }, events: [...c.events, ev] }
+        await db.cases.put(next)
+        setC(next)
+        setOk(await verifyChain(next.events))
+      })()
+      return
+    }
+    if (ticketRepeat && parseConfirmIntent(text) === 'yes') {
+      void confirmTicket()
+      return
+    }
+    const ticket = spokenTicket(text)
+    setTicketInput(ticket)
+    if (validateTicket(ticket)) setTicketRepeat(ticket.split(''))
+  }
+
   const onTicketSubmit = () => {
     if (!validateTicket(ticketInput)) {
-      alert('तिकीट ४–३० अक्षरे/अंक असावे.')
+      alert(t(lang, 'ticketBad'))
       return
     }
     setTicketRepeat(ticketInput.trim().split(''))
@@ -140,48 +175,49 @@ export function CasePage() {
 
   const shareText = () => {
     const fp = c.events.at(-1)?.hash.slice(0, 12) ?? ''
-    return `${summary}\n\nRecord fingerprint: ${fp}\n${INTEGRITY_OK}`
+    return `${summary}\n\nRecord fingerprint: ${fp}\n${t(lang, 'integrityOk')}`
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <SafetyBanner />
-      <ClockDisplay eventTimeIso={c.eventTimeIso} />
+      <SafetyBanner lang={lang} />
+      <ClockDisplay eventTimeIso={c.eventTimeIso} lang={lang} />
       <p className={ok ? 'text-emerald-400' : 'text-amber-400'}>
-        {ok ? INTEGRITY_OK : INTEGRITY_BAD}
+        {ok ? t(lang, 'integrityOk') : t(lang, 'integrityBad')}
       </p>
-      <section className="rounded-xl border border-slate-700 bg-slate-900 p-4">
-        <h2 className="text-xl font-bold">१४४४७ स्क्रिप्ट</h2>
+      <VoiceMic lang={lang} prompt={t(lang, 'ticketAsk')} onHeard={onHeard} />
+      <section className="card tilt">
+        <h2 className="text-xl font-bold">{t(lang, 'scriptTitle')}</h2>
         <p className="mt-2 whitespace-pre-wrap text-lg">{scriptLines.join('\n')}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <button type="button" className="btn primary" onClick={() => void onCall()}>
-            Call 14447
+            {t(lang, 'call')}
           </button>
           <button type="button" className="btn" onClick={() => void onWa()}>
-            WhatsApp
+            {t(lang, 'wa')}
           </button>
         </div>
-        <label className="mt-2 flex items-center gap-2 text-sm text-slate-400">
+        <label className="mt-2 flex items-center gap-2 text-sm text-[var(--muted)]">
           <input
             type="checkbox"
             checked={waExtra}
             onChange={(e) => setWaExtra(e.target.checked)}
           />
-          WhatsApp मध्ये policy/mobile समाविष्ट करा (default off)
+          {t(lang, 'waExtra')}
         </label>
       </section>
       <section className="rounded-xl border border-slate-700 p-4">
-        <h2 className="text-lg font-bold">तिकीट क्रमांक</h2>
+        <h2 className="text-lg font-bold">{t(lang, 'ticketTitle')}</h2>
         {!ticketRepeat ? (
           <>
             <input
               className="input"
               value={ticketInput}
               onChange={(e) => setTicketInput(e.target.value)}
-              placeholder="SMS तिकीट"
+              placeholder={t(lang, 'ticketPh')}
             />
             <button type="button" className="btn primary mt-2" onClick={onTicketSubmit}>
-              पुष्टीसाठी
+              {t(lang, 'ticketConfirm')}
             </button>
           </>
         ) : (
@@ -194,20 +230,24 @@ export function CasePage() {
               ))}
             </p>
             <button type="button" className="btn primary mt-2" onClick={() => void confirmTicket()}>
-              हो — जतन करा
+              {t(lang, 'ticketSave')}
             </button>
           </>
         )}
-        {c.ticket && <p className="mt-2 text-slate-300">जतन: {c.ticket}</p>}
+        {c.ticket && (
+          <p className="mt-2">
+            {t(lang, 'ticketSaved')}: {c.ticket}
+          </p>
+        )}
       </section>
       <section className="rounded-xl border border-slate-700 p-4">
-        <h2 className="text-lg font-bold">पुरावे</h2>
+        <h2 className="text-lg font-bold">{t(lang, 'evidenceTitle')}</h2>
         <ul className="list-disc pl-6">
-          <li>{c.evidence.photos ? '✓' : '○'} फोटो</li>
-          <li>{c.evidence.policy ? '✓' : '○'} विमा प्रत</li>
-          <li>{c.evidence.passbook ? '✓' : '○'} पासबुक फोटो</li>
-          <li>{c.evidence.witness ? '✓' : '○'} साक्षीदार</li>
-          <li>{c.evidence.survey ? '✓' : '○'} सर्वे / गट क्रमांक</li>
+          <li>{c.evidence.photos ? '✓' : '○'} {t(lang, 'photo')}</li>
+          <li>{c.evidence.policy ? '✓' : '○'} {t(lang, 'policy')}</li>
+          <li>{c.evidence.passbook ? '✓' : '○'} {t(lang, 'passbook')}</li>
+          <li>{c.evidence.witness ? '✓' : '○'} {t(lang, 'witness')}</li>
+          <li>{c.evidence.survey ? '✓' : '○'} {t(lang, 'survey')}</li>
         </ul>
         <input
           type="file"
@@ -223,40 +263,56 @@ export function CasePage() {
               type="button"
               className="btn"
               onClick={() => {
-                const next = {
-                  ...c,
-                  evidence: { ...c.evidence, [k]: true },
-                }
-                void db.cases.put(next).then(() => setC(next))
+                void (async () => {
+                  const ev = await appendEvent(
+                    c.events,
+                    'evidence_added',
+                    { kind: k },
+                    new Date().toISOString(),
+                  )
+                  const next = {
+                    ...c,
+                    evidence: { ...c.evidence, [k]: true },
+                    events: [...c.events, ev],
+                  }
+                  await db.cases.put(next)
+                  setC(next)
+                  setOk(await verifyChain(next.events))
+                })()
               }}
             >
-              {k} ✓
+              {t(lang, k)} ✓
             </button>
           ))}
         </div>
       </section>
       <section className="flex flex-wrap gap-3">
         <button type="button" className="btn" onClick={exportJson}>
-          JSON
+          {t(lang, 'json')}
         </button>
         <button
           type="button"
           className="btn"
           onClick={() => {
-            void navigator.share?.({ text: shareText() }).catch(() => {
-              void navigator.clipboard.writeText(shareText())
-            })
+            const text = shareText()
+            if (typeof navigator.share === 'function') {
+              void navigator.share({ text }).catch(() => {
+                void navigator.clipboard.writeText(text)
+              })
+              return
+            }
+            void navigator.clipboard.writeText(text)
           }}
         >
-          Share text
+          {t(lang, 'share')}
         </button>
         <Link to={`/case/${c.id}/print`} className="btn">
-          Printable record
+          {t(lang, 'print')}
         </Link>
       </section>
       {c.profileId === 'demo-farmer' && (
         <section className="rounded border border-dashed border-slate-600 p-3 text-base">
-          <p className="text-slate-400">डेमो only</p>
+          <p className="text-[var(--muted)]">{t(lang, 'demoOnly')}</p>
           <button
             type="button"
             className="btn mt-2"
@@ -274,7 +330,7 @@ export function CasePage() {
               })
             }}
           >
-            Demo: tamper with record
+            {t(lang, 'tamper')}
           </button>
           <button
             type="button"
@@ -299,7 +355,7 @@ export function CasePage() {
               })()
             }}
           >
-            Repair demo
+            {t(lang, 'repair')}
           </button>
         </section>
       )}

@@ -1,10 +1,12 @@
-import { NOT_GOV_LINE_MR, SAFETY_LINE_MR } from '../constants/copy'
+import { t } from '../i18n'
+import type { SpeechLang } from '../speech/useSpeech'
 
-export function SafetyBanner() {
+export function SafetyBanner({ lang }: { lang: SpeechLang }) {
   return (
-    <div className="rounded-lg border border-slate-600 bg-slate-900/80 px-4 py-3 text-base leading-relaxed text-slate-200">
-      <p>{SAFETY_LINE_MR}</p>
-      <p className="mt-2 text-amber-200/90">{NOT_GOV_LINE_MR}</p>
-    </div>
+    <aside className="card tilt">
+      <p className="kicker">{t(lang, 'limit')}</p>
+      <p>{t(lang, 'safety')}</p>
+      <p className="mt-2 text-[var(--gold)]">{t(lang, 'notGov')}</p>
+    </aside>
   )
 }

@@ -1,6 +1,6 @@
 # BimaBol (७२ तास)
 
-Marathi-first voice PWA for the PMFBY 72-hour crop-loss reporting window. Speaks or types the loss, confirms a record, runs a conservative clock, script for **14447**, ticket capture, evidence, tamper-evident log. **Not** a claim filer.
+Marathi-first voice PWA for the PMFBY 72-hour crop-loss reporting window. The farmer speaks the loss into the microphone. The app confirms the record, runs a conservative clock, reads the **14447** script, captures the ticket by voice, and keeps evidence. Typing appears only after the microphone fails twice. **Not** a claim filer.
 
 ## What is new in Round 2
 
@@ -13,12 +13,14 @@ npm install
 npm run dev
 ```
 
-Open the printed URL (usually `http://localhost:5173`). Production build:
+Open **http://localhost:5173** only. On this PC, port 8080 is Oracle Database, not BimaBol. The Vite server is pinned to 5173.
 
 ```bash
 npm run build
 npm run preview
 ```
+
+Production preview may print another port if 5173 is already taken by `npm run dev`.
 
 ## Deploy to Vercel
 
@@ -39,7 +41,7 @@ Edit **`src/config/steps.ts`** only. Each step has `id`, bilingual `prompt` (`mr
 | **iOS Safari** | Unreliable or missing (especially installed PWA) | Limited voices | Add to Home Screen only |
 | **Firefox desktop/mobile** | Not supported | Varies | Limited |
 
-If the mic fails, the flow falls back to typing. **`/demo`** parses pasted text without a mic on all browsers.
+`/report` and the case screen are voice-first: tap the gold microphone, speak, and the fields fill. After two failed listens, a typed box is the fallback. **`/demo`** parses pasted text without a mic. The microphone needs HTTPS (the Vercel link) on a phone. Chrome desktop on localhost can use it too.
 
 Recognition confidence is often `0` (shown as **unknown**). Marathi voices may be missing; the app shows text on screen instead of speaking.
 
@@ -49,7 +51,8 @@ Recognition confidence is often `0` (shown as **unknown**). Marathi voices may b
 - `src/flow/` — step loop and confirm intents
 - `src/speech/` — recognition, synthesis, privacy gate
 - `src/parse/` — digits, time (Asia/Kolkata), Devanagari keyword fold
-- `src/pages/FlowPage.tsx` — main experience
+- `src/pages/ReportPage.tsx` — voice report (mic fills each step)
+- `src/pages/FlowPage.tsx` — starter step loop
 - `src/pages/DemoPage.tsx` — parser playground
 
 ## Docker

@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import {
   dismissPrivacy,
   isPrivacyDismissed,
@@ -16,9 +17,9 @@ export function PrivacyNote({ open, onDismiss }: Props) {
     onDismiss()
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/80 p-4 pb-28 sm:items-center"
       role="dialog"
       aria-modal="true"
     >
@@ -40,7 +41,8 @@ export function PrivacyNote({ open, onDismiss }: Props) {
           समजले / OK
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

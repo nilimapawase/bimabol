@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom'
 import { db } from '../db/database'
 import type { CaseRecord } from '../db/types'
 import { cropLabel, lossLabel } from '../parse/reportParser'
+import { t } from '../i18n'
+import type { SpeechLang } from '../speech/useSpeech'
 
-export function PrintPage() {
+export function PrintPage({ lang }: { lang: SpeechLang }) {
   const { id } = useParams()
   const [c, setC] = useState<CaseRecord | null>(null)
 
@@ -22,14 +24,14 @@ export function PrintPage() {
   return (
     <article className="bg-white p-8 text-black print:p-4">
       <h1 className="text-2xl font-bold">Self-maintained farmer record</h1>
-      <p className="mt-4 text-sm">हे अधिकृत सरकारी दस्तऐवज नाही.</p>
+      <p className="mt-4 text-sm">{t(lang, 'notGov')}</p>
       <ul className="mt-4 list-disc pl-6">
-        {c.village && <li>गाव: {c.village}</li>}
-        {c.district && <li>जिल्हा: {c.district}</li>}
-        {c.crop && <li>पीक: {cropLabel(c.crop)}</li>}
-        {c.loss && <li>नुकसान: {lossLabel(c.loss)}</li>}
-        <li>वेळ: {c.eventTimeIso}</li>
-        {c.ticket && <li>तिकीट: {c.ticket}</li>}
+        {c.village && <li>{t(lang, 'lblVillage')}: {c.village}</li>}
+        {c.district && <li>{c.district}</li>}
+        {c.crop && <li>{t(lang, 'lblCrop')}: {cropLabel(c.crop)}</li>}
+        {c.loss && <li>{t(lang, 'lblLoss')}: {lossLabel(c.loss)}</li>}
+        <li>{t(lang, 'lblTime')}: {c.eventTimeIso}</li>
+        {c.ticket && <li>{t(lang, 'lblTicket')}: {c.ticket}</li>}
       </ul>
       <p className="mt-4 text-sm">Record fingerprint: {fp}</p>
     </article>

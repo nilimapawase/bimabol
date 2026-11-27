@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { ClockDisplay } from '../components/ClockDisplay'
+import { clockState } from '../domain/clock'
 import {
   getActiveProfileId,
   listCases,
@@ -11,11 +12,15 @@ import {
 } from '../db/database'
 import type { CaseRecord, Profile } from '../db/types'
 import { cropLabel, lossLabel } from '../parse/reportParser'
+import { t } from '../i18n'
+import type { SpeechLang } from '../speech/useSpeech'
 
-export function HomePage() {
+export function HomePage({ lang }: { lang: SpeechLang }) {
   const [cases, setCases] = useState<CaseRecord[]>([])
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [activeId, setActiveId] = useState('')
+  const [name, setName] = useState('')
+  const [mobile, setMobile] = useState('')
 
   const reload = async () => {
     const pid = await getActiveProfileId()
@@ -28,69 +33,128 @@ export function HomePage() {
     void reload()
   }, [])
 
-  const switchProfile = (id: string) => {
-    setActiveProfileId(id)
-    setActiveId(id)
-    void listCases(id).then(setCases)
-  }
+  const board = useMemo(() => {
+    const withTicket = cases.filter((c) => c.ticket).length
+    const evidenceDone = cases.filter((c) =>
+      Object.values(c.evidence).every(Boolean),
+    ).length
+    const soonest = cases.reduce<CaseRecord | null>((best, c) => {
+      if (!best) return c
+      return clockState(Date.parse(c.eventTimeIso)).remainingMs <
+        clockState(Date.parse(best.eventTimeIso)).remainingMs
+        ? c
+        : best
+    }, null)
+    return { withTicket, evidenceDone, soonest }
+  }, [cases])
 
   const addProfile = () => {
-    const name = prompt('शेतकऱ्याचे नाव / farmer name')
-    if (!name?.trim()) return
-    const mobile = prompt('१० अंकी मोबाईल (optional)') ?? ''
+    if (!name.trim()) return
     const id = crypto.randomUUID()
-    void upsertProfile({ id, name: name.trim(), mobile: mobile.trim() }).then(reload)
+    void upsertProfile({
+      id,
+      name: name.trim(),
+      mobile: mobile.trim(),
+    }).then(() => {
+      setName('')
+      setMobile('')
+      setActiveProfileId(id)
+      return reload()
+    })
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <SafetyBanner />
-      <section className="rounded-xl border border-slate-700 p-4">
-        <h2 className="text-lg font-semibold">ऑपरेटर / प्रोफाइल</h2>
-        <ul className="mt-2 flex flex-col gap-2">
-          {profiles.map((p) => (
-            <li key={p.id}>
-              <button
-                type="button"
-                className={`btn w-full text-left ${activeId === p.id ? 'primary' : ''}`}
-                onClick={() => switchProfile(p.id)}
-              >
-                {p.name} ({p.mobile || '—'})
-              </button>
-            </li>
-          ))}
-        </ul>
-        <button type="button" className="btn mt-3" onClick={addProfile}>
-          + नवीन प्रोफाइल
-        </button>
+    <div className="flex flex-col gap-4">
+      <SafetyBanner lang={lang} />
+      <section className="card tilt rise">
+        <p className="kicker">{t(lang, 'status')}</p>
+        <p className="mb-3 text-sm text-[var(--muted)]">{t(lang, 'statusNote')}</p>
+        <div className="stat-grid">
+          <div className="stat">
+            <b>{cases.length}</b>
+            <span>{t(lang, 'cases')}</span>
+          </div>
+          <div className="stat">
+            <b>{board.withTicket}</b>
+            <span>{t(lang, 'tickets')}</span>
+          </div>
+          <div className="stat">
+            <b>{board.evidenceDone}</b>
+            <span>{t(lang, 'evidence')}</span>
+          </div>
+        </div>
+        {board.soonest && (
+          <div className="mt-3">
+            <ClockDisplay eventTimeIso={board.soonest.eventTimeIso} lang={lang} />
+          </div>
+        )}
       </section>
-      <Link
-        to="/report"
-        className="block rounded-2xl border-2 border-sky-500 bg-sky-950 px-6 py-6 text-center text-2xl font-bold text-sky-100"
-      >
-        नुकसान सांगा
-      </Link>
-      <h2 className="text-xl font-semibold text-slate-300">प्रकरणे / Cases</h2>
-      {cases.length === 0 ? (
-        <p className="text-slate-400">अद्याप प्रकरण नाही.</p>
-      ) : (
-        <ul className="flex flex-col gap-4">
-          {cases.map((c) => (
-            <li key={c.id}>
-              <Link
-                to={`/case/${c.id}`}
-                className="block rounded-xl border border-slate-700 bg-slate-900 p-4 hover:border-sky-600"
-              >
-                <ClockDisplay eventTimeIso={c.eventTimeIso} />
-                <p className="mt-2 text-lg">
-                  {c.crop ? cropLabel(c.crop) : '—'} · {c.village ?? '—'} ·{' '}
-                  {c.loss ? lossLabel(c.loss) : '—'}
-                </p>
-              </Link>
-            </li>
+
+      <section className="card">
+        <p className="kicker">{t(lang, 'whoFor')}</p>
+        <div className="mt-2 flex flex-col gap-2">
+          {profiles.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`btn text-left ${activeId === p.id ? 'primary' : ''}`}
+              onClick={() => {
+                setActiveProfileId(p.id)
+                setActiveId(p.id)
+                void listCases(p.id).then(setCases)
+              }}
+            >
+              {p.name}
+              <span className="block text-sm opacity-80">{p.mobile || t(lang, 'noMobile')}</span>
+            </button>
           ))}
-        </ul>
-      )}
+        </div>
+        <div className="mt-3 grid gap-2">
+          <input
+            className="input"
+            placeholder={t(lang, 'newName')}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            className="input"
+            placeholder={t(lang, 'newMobile')}
+            inputMode="numeric"
+            value={mobile}
+            onChange={(e) => setMobile(e.target.value)}
+          />
+          <button type="button" className="btn" onClick={addProfile}>
+            {t(lang, 'addProfile')}
+          </button>
+        </div>
+      </section>
+
+      <Link to="/report" className="hero-cta">
+        {t(lang, 'tellLoss')}
+      </Link>
+
+      <section>
+        <p className="kicker">{t(lang, 'cases')}</p>
+        {cases.length === 0 ? (
+          <p className="text-[var(--muted)]">{t(lang, 'noCases')}</p>
+        ) : (
+          <ul className="flex flex-col gap-3">
+            {cases.map((c) => (
+              <li key={c.id}>
+                <Link to={`/case/${c.id}`} className="card block no-underline text-inherit">
+                  <p className="text-lg font-semibold">
+                    {c.crop ? cropLabel(c.crop) : t(lang, 'noCrop')} · {c.village ?? t(lang, 'noVillage')} ·{' '}
+                    {c.loss ? lossLabel(c.loss) : t(lang, 'noLoss')}
+                  </p>
+                  <p className="text-sm text-[var(--muted)]">
+                    {c.ticket ? `${t(lang, 'ticketSaved')} ${c.ticket}` : t(lang, 'noTicket')}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   )
 }

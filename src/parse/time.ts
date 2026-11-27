@@ -8,8 +8,19 @@ export type TimeParse = {
   localISO: string
 }
 
-function containsAny(haystack: string, needles: string[]): boolean {
-  return needles.some((n) => haystack.includes(n))
+function hasFoldedToken(raw: string, words: string[]): boolean {
+  const tokens = foldDevanagari(raw)
+    .split(/[\s,.:;!?।]+/)
+    .filter(Boolean)
+  const latin = foldLatin(raw).split(/[\s,.:;!?]+/).filter(Boolean)
+  return words.some((w) => {
+    const fw = foldDevanagari(w)
+    const fl = foldLatin(w)
+    return (
+      tokens.some((t) => t === fw) ||
+      latin.some((t) => t === fl)
+    )
+  })
 }
 
 function kolkataYmd(base: Date): { y: number; m: number; d: number } {
@@ -41,30 +52,18 @@ function toIstIso(
 }
 
 export function parseTime(raw: string): TimeParse | null {
-  const dev = foldDevanagari(raw)
-  const lat = foldLatin(raw)
-
   let day: TimeParse['day'] | null = null
-  if (containsAny(dev, ['आज']) || containsAny(lat, ['today'])) {
+  if (hasFoldedToken(raw, ['आज', 'today'])) {
     day = 'today'
-  } else if (
-    containsAny(dev, ['काल', 'कल']) ||
-    containsAny(lat, ['yesterday'])
-  ) {
+  } else if (hasFoldedToken(raw, ['काल', 'कल', 'yesterday'])) {
     day = 'yesterday'
   }
   if (!day) return null
 
   let part: TimeParse['part'] | null = null
-  if (
-    containsAny(dev, ['सकाळ', 'सकाळी', 'सुबह']) ||
-    containsAny(lat, ['morning'])
-  ) {
+  if (hasFoldedToken(raw, ['सकाळ', 'सकाळी', 'सुबह', 'morning'])) {
     part = 'morning'
-  } else if (
-    containsAny(dev, ['रात', 'रात्र', 'रात्री']) ||
-    containsAny(lat, ['night'])
-  ) {
+  } else if (hasFoldedToken(raw, ['रात', 'रात्र', 'रात्री', 'night'])) {
     part = 'night'
   }
   if (!part) return null
