@@ -31,13 +31,20 @@ export function parseConfirmIntent(raw: string): ConfirmIntent {
   const foldedUtterance = foldPhrase(raw)
   const devUtterance = foldDevanagari(raw)
 
+  const hits: { intent: ConfirmIntent; len: number }[] = []
   for (const { intent, phrases } of PHRASES) {
     for (const phrase of phrases) {
       const folded = foldPhrase(phrase)
-      if (foldedUtterance.includes(folded) || devUtterance.includes(foldDevanagari(phrase))) {
-        return intent
+      if (
+        foldedUtterance.includes(folded) ||
+        devUtterance.includes(foldDevanagari(phrase))
+      ) {
+        hits.push({ intent, len: folded.length })
       }
     }
   }
+  if (!hits.length) return null
+  hits.sort((a, b) => b.len - a.len)
+  return hits[0]!.intent
   return null
 }

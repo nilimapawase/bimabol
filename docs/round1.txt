@@ -1,0 +1,86 @@
+Idea:-
+
+The problem: Under India's crop insurance scheme (PMFBY), a farmer whose crop is damaged by hail, flood or a similar localised calamity must inform the insurer within 72 hours. Official Lok Sabha answers state the rule, and late intimation is a commonly cited ground for rejecting claims. A farmer in Wardha, Maharashtra, told the press his claim was refused as outside the window although he phoned the helpline at once, and nobody could tell him the reference time. In the first hours after a loss, a stressed farmer must remember the policy number, crop, village and time, report through the helpline, the official app, the bank or the agriculture office, and keep proof.
+
+Who has it, where and how often: Smallholder farmers in Maharashtra, and the family members or service-centre operators who act for them, standing in the damaged field or at home, often with weak mobile coverage. It hurts every time a calamity hits an insured crop, and it keeps recurring: the state agriculture department reported unseasonal rain and hail damage across 29 districts and about 2 lakh hectares between 14 March and 2 April 2026, and across 27 districts (61,004 hectares) in May and June 2026. Not all of that area was insured. I found no national figure for how many farmers miss the 72-hour window, so I treat that as unknown and plan to measure it.
+
+The voice-first product: BimaBol (७२ तास), a Marathi voice assistant. Step by step: (1) The farmer says what happened, for example "आज सकाळी गारपीट झाली, माझ्या सोयाबीनचे नुकसान झाले." (2) BimaBol turns the speech into a record (crop, village, type of loss, time) and reads it back for confirmation. (3) It starts a visible 72-hour clock and says "report now, do not wait". (4) It shows and reads out exactly what to say to the Krishi Rakshak helpline (14447), with a one-tap call button. (5) After the call, the farmer says the ticket number. (6) It ticks off an evidence checklist (dated photos, policy copy, bank details, a witness) and produces a shareable, dated log. It does not file claims, promise payouts or replace the official channels.
+
+Why voice comes first: The farmer is in a field, stressed, often with muddy hands, and typing into a form is the wrong tool at that moment. Speaking Marathi is faster, matches the official process, which is itself a phone call, and lets a family member confirm the facts when the app reads the record back. Voice is the main way to use the product, not a feature added on top: every step can be done by speaking and listening.
+
+
+
+
+
+
+
+Prompt:
+
+Build BimaBol (७२ तास), a Marathi-first voice web app for the first hours after hail, flood or a similar localised crop loss in Maharashtra, while the PMFBY 72-hour window is running. Speaking collects the facts, starts a conservative countdown, reads the exact words for helpline 14447, saves the SMS ticket, and keeps a dated log on the phone. It does not file a claim, predict a payout, give legal advice, or replace 14447, the Crop Insurance App, the bank or the agriculture office.
+
+USERS. The insured smallholder, in the field or at home: stressed, muddy hands, weak signal, happier speaking than typing. A family member confirms the read-back. An operator reports for another farmer and stores that name. Marathi first, Varhadi or standard. Hindi and English mix in, Devanagari or Roman. Speaking and listening complete every step.
+
+BUILD. React, TypeScript, Vite, Tailwind, service worker, Dexie. No login and no cloud copy of farmer records. Web Speech API (mr-IN, hi-IN, en-IN); Sarvam only via a proxy whose key stays on the host and which deletes the audio. speechSynthesis; if no Marathi voice, show the text. A local parser reads crops, districts, digits, amounts and times. Optional /api/extract fills nulls only, JSON, temperature 0, 4-second limit, and must not guess. No Aadhaar, GPS, analytics, stored audio or bank-account numbers. Always show Call 14447 and Delete everything. Before the first mic, say speech may leave the phone. Deploy on HTTPS.
+
+VOICE FLOW. Replies are calm plain Marathi, one idea, under 20 words. The app speaks, beeps, then listens. After 8 seconds: "मी ऐकत आहे. तुम्ही बोलू शकता." Any step accepts हो, नाही, पुन्हा सांगा, हळू, थांबा, फोन करा, हिंदी, English or बदला.
+
+1. Open. Big button "नुकसान सांगा". App: "पिकाचे नुकसान झाले असेल तर मला सांगा."
+2. Who. App: "तुमच्यासाठी की दुसऱ्या शेतकऱ्यासाठी?" For someone else, ask and store the name.
+3. Setup once, by voice: 10-digit mobile, policy or enrolment number, bank branch. Read digits in groups. Save only after हो.
+4. Report, spoken freely. Example: "आज सकाळी गारपीट झाली, माझ्या सोयाबीनचे नुकसान झाले, गाव खेडगाव." Save crop, village, taluka, district, loss, area, event time, discovery time. "आज सकाळी" is today 06:00. "काल रात्री" is yesterday 19:00. Use Asia/Kolkata and the earliest time in that period.
+5. Gaps. One question, three at most: "कोणते पीक?" "कोणते गाव?" "हे केव्हा झाले?"
+6. Show and say: "मला असे समजले आहे: पीक सोयाबीन, गाव खेडगाव, नुकसान गारपीट, वेळ आज सकाळी. बरोबर आहे का?" हो saves. "गाव बदला" asks only that field.
+7. Clock from the earlier time plus 72 hours. Say "७२ तासांचे घड्याळ सुरू. वाट पाहू नका. आत्ताच कळवा." Show hours and minutes: green above 48, amber from 24 to 48, red under 24, plus an icon. It survives reload and reminds at 24, 12, 6 and 1 hours. If late: "वेळ निघून गेली असू शकते, तरीही आत्ताच १४४४७ वर कळवा आणि नोंद ठेवा."
+8. Large script, then read it: name, village, taluka, district, crop, loss, time, policy, mobile, and "कृपया तिकीट क्रमांक द्या." One tap calls 14447. Also show WhatsApp 7065514447. Omit a missing item. Invent nothing.
+9. Ticket. App: "फोन झाल्यावर SMS मधील तिकीट क्रमांक सांगा." Repeat each character, then save it with the time.
+10. Evidence by voice or tap: dated photos, policy copy, passbook photo, witness, survey or गट number. "फोटो काढले" ticks photos. Do not store an account number. Say the official app may ask for a geotagged photo. Then share text and a printable page titled Self-maintained farmer record.
+
+WHAT IT SAYS BACK. On home, clock, script and log, show and speak: "हे अॅप क्लेम दाखल करत नाही. विमा कंपनीला किंवा १४४४७ वर त्वरित कळवा. नियम पीक व आपत्तीनुसार बदलू शकतात." If the loss sounds widespread, or like a wild-animal attack or paddy inundation, say the rules may differ and to ask 14447. Show "हे सरकारी किंवा विमा कंपनीचे अॅप नाही."
+
+NOISE, ACCENTS, MIXED SPEECH. Parse "आज morning मध्ये hailstorm आला, my soyabean damage झाले" as soybean, hail, this morning. Fold ळ/ल, श/ष/स, ण/न and vowel length, then fuzzy-match crops, loss words and the 36 districts. Parse साडेतीनशे, दीड, सव्वा, अडीच and डबल or double. If noise stays high, say "आवाज जास्त आहे, मोबाईल तोंडाजवळ धरा" and use hold-to-talk. Under 0.6, repeat what was heard and wait for हो or नाही. Under 0.35, say "नीट ऐकू आले नाही. कृपया पुन्हा सांगा." If Marathi returns mostly Latin letters, retry once in en-IN, then hi-IN. Two failures: big buttons or the keyboard for that field only. हिंदी or English keeps the report and switches language. No internet: "इंटरनेट नाही. टाइप करा. घड्याळ चालू आहे." Typing finishes the same steps. A labelled डेमो डेटा farmer and a box that injects 10 Marathi and 10 Hindi test sentences must ship in the README.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Impact:
+
+
+
+
+
+Who benefits. The people whose day changes are insured smallholder farmers in Maharashtra in the hours after hail, flood, inundation or a similar localised loss, and the family members and service-centre operators who phone for them. A primary figure from the state agriculture department, reported in the press, put unseasonal rain and hail at 2,04,835 hectares across 29 districts between 14 March and 2 April 2026. In May and June 2026 the minister reported 61,004 hectares across 27 districts, including about 18,121 hectares of banana. Not all of that land was insured, and I have no count of farmers who miss the 72-hour window. A Lok Sabha answer on 4 August 2026 keeps the 72-hour rule on 14447 and notes app failures and weak networks, with no plan to extend the time.
+
+What changes. Today the farmer remembers the policy number, crop, village and time, then calls 14447, uses the Crop Insurance App, or goes to the bank or agriculture office, and keeps no personal record of the call. The helpline, the Crop Insurance App, WhatsApp 7065514447 and Kisan e-Mitra already take a report or answer a question. Fasal Rakshak, 72 Ghante and Fasal Nuksan Sahayak already show a clock or a script. What I did not find as one Marathi flow is: speak the loss, hear it back, read the 14447 script, tap to call, speak the SMS ticket character by character, and keep that log only on the phone. BimaBol does not file the claim and does not promise money. The official channel still receives the intimation.
+
+How you would know. No farmer has used it. These are targets for a pilot of about 30 insured farmers in one district. At least 24 save a 14447 ticket, or mark the call, within 24 hours of speaking the loss. At least 27 confirmed records contain crop, village, loss type and time. Everyone who finishes can show the dated log a week later. I would time the same steps with 5 to 10 farmers first and change the targets if that baseline is far off. With an insurer or the agriculture department, a later signal is late-intimation rejections among pilot farmers against a similar group. A finished log is preparation. It is not a paid claim.
+
+The main risk. The largest risk is false comfort. Seeing hours left can feel like the claim is safe. The start of the 72 hours is often unclear, a Wardha farmer was refused after calling at once, widespread season-end losses do not need this individual report, and some covers need a geotagged photo in the official app. A misheard village or policy number makes the call worse. Similar clocks already exist, so the result that matters is a 14447 ticket the farmer can show. Many farmers in a weak-signal field will never open a new app. A relative or an operator may be the real user.
+
+
+
+
+
+
+
+
+
+
+

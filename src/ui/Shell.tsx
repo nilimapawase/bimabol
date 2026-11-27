@@ -1,15 +1,22 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import type { SpeechLang } from '../speech/useSpeech'
+import { OFFLINE_BANNER_MR } from '../constants/copy'
 
 type Props = {
   lang: SpeechLang
   onLangChange: (lang: SpeechLang) => void
   children: ReactNode
   onDeleteAll: () => void
+  resetKey?: number
 }
 
-export function Shell({ lang, onLangChange, children, onDeleteAll }: Props) {
+export function Shell({
+  lang,
+  onLangChange,
+  children,
+  onDeleteAll,
+}: Props) {
   const [online, setOnline] = useState(
     typeof navigator !== 'undefined' ? navigator.onLine : true,
   )
@@ -26,6 +33,19 @@ export function Shell({ lang, onLangChange, children, onDeleteAll }: Props) {
     }
   }, [])
 
+  const link = (to: string, label: string) => (
+    <Link
+      to={to}
+      className={
+        location.pathname === to || (to !== '/' && location.pathname.startsWith(to))
+          ? 'text-sky-400 underline'
+          : 'text-slate-300'
+      }
+    >
+      {label}
+    </Link>
+  )
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-4 p-4 text-xl">
       {!online && (
@@ -33,44 +53,28 @@ export function Shell({ lang, onLangChange, children, onDeleteAll }: Props) {
           className="rounded-lg border border-amber-500 bg-amber-950 px-4 py-3 text-lg text-amber-100"
           role="status"
         >
-          इंटरनेट नाही, टाइप करता येईल. / No internet, you can type.
+          {OFFLINE_BANNER_MR}
         </div>
       )}
 
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 pb-4">
-        <nav className="flex gap-3 text-lg font-semibold">
-          <Link
-            to="/"
-            className={
-              location.pathname === '/'
-                ? 'text-sky-400 underline'
-                : 'text-slate-300'
-            }
-          >
-            प्रवाह / Flow
-          </Link>
-          <Link
-            to="/demo"
-            className={
-              location.pathname === '/demo'
-                ? 'text-sky-400 underline'
-                : 'text-slate-300'
-            }
-          >
-            डेमो / Demo
-          </Link>
+        <nav className="flex flex-wrap gap-3 text-lg font-semibold">
+          {link('/', 'मुख्य')}
+          {link('/report', 'नुकसान')}
+          {link('/demo', 'डेमो')}
+          {link('/about', 'About')}
         </nav>
 
         <label className="flex items-center gap-2 text-base">
-          <span className="text-slate-400">भाषा / Lang</span>
+          <span className="text-slate-400">भाषा</span>
           <select
             value={lang}
             onChange={(e) => onLangChange(e.target.value as SpeechLang)}
             className="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-lg"
           >
-            <option value="mr-IN">मराठी mr-IN</option>
-            <option value="hi-IN">हिंदी hi-IN</option>
-            <option value="en-IN">English en-IN</option>
+            <option value="mr-IN">mr-IN</option>
+            <option value="hi-IN">hi-IN</option>
+            <option value="en-IN">en-IN</option>
           </select>
         </label>
       </header>
@@ -83,16 +87,14 @@ export function Shell({ lang, onLangChange, children, onDeleteAll }: Props) {
           onClick={onDeleteAll}
           className="rounded-xl border-2 border-red-500 bg-red-950/40 px-5 py-4 text-lg font-semibold text-red-300"
         >
-          सर्व काढून टाका / Delete everything
+          सर्व काढून टाका
         </button>
-        <button
-          type="button"
-          disabled
-          title="Placeholder for a future phone call action"
-          className="rounded-xl border-2 border-slate-600 bg-slate-800 px-5 py-4 text-lg font-semibold text-slate-400"
+        <a
+          href="tel:14447"
+          className="rounded-xl border-2 border-emerald-500 bg-emerald-950/40 px-5 py-4 text-lg font-semibold text-emerald-200"
         >
-          कॉल / Call (placeholder)
-        </button>
+          Call 14447
+        </a>
       </footer>
     </div>
   )

@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.env*
+.cursor
+docs/archive
+evidence
+*.md
+!README.md

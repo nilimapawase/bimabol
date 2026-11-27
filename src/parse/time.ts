@@ -47,7 +47,10 @@ export function parseTime(raw: string): TimeParse | null {
   let day: TimeParse['day'] | null = null
   if (containsAny(dev, ['आज']) || containsAny(lat, ['today'])) {
     day = 'today'
-  } else if (containsAny(dev, ['काल']) || containsAny(lat, ['yesterday'])) {
+  } else if (
+    containsAny(dev, ['काल', 'कल']) ||
+    containsAny(lat, ['yesterday'])
+  ) {
     day = 'yesterday'
   }
   if (!day) return null

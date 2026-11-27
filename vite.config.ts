@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/*.png'],
       manifest: {
-        name: 'Voice Starter',
-        short_name: 'Voice',
-        description: 'Voice-first starter kit',
+        name: 'BimaBol (७२ तास)',
+        short_name: 'BimaBol',
+        description: 'Marathi voice PMFBY 72-hour reporting aid',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',

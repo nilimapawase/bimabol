@@ -48,6 +48,24 @@ Recognition confidence is often `0` (shown as **unknown**). Marathi voices may b
 - `src/pages/FlowPage.tsx` — main experience
 - `src/pages/DemoPage.tsx` — parser playground
 
+## Docker
+
+```bash
+docker compose up --build
+```
+
+Open http://localhost:8080 — no `.env` required.
+
+## Tests
+
+```bash
+npm test
+```
+
+## Security and privacy
+
+See [SECURITY.md](SECURITY.md). Data stays on device (Dexie). Speech may use the browser vendor's service.
+
 ## License
 
 MIT (hackathon starter — use and fork freely).

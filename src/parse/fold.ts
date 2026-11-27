@@ -3,7 +3,7 @@ export function foldDevanagari(input: string): string {
   let s = input.normalize('NFC')
 
   const stripClass =
-    /[\u093A\u0941-\u094C\u094D\u0951-\u0954\u093B\u093C\u0902\u0903\u0901]/g
+    /[\u093A\u093E-\u094C\u094D\u0951-\u0954\u093B\u093C\u0902\u0903\u0901]/g
   s = s.replace(stripClass, '')
 
   const vowelMap: Record<string, string> = {
