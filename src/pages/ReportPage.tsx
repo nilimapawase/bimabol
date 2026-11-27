@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
+import { dialHelpline } from '../constants/helpline'
 import { createCaseFromDraft, type ReportDraft } from '../db/caseService'
 import { getActiveProfileId, db } from '../db/database'
 import { parseConfirmIntent } from '../flow/intents'
@@ -10,9 +11,6 @@ import type { CropId } from '../parse/vocab'
 import { t } from '../i18n'
 import type { SpeechLang } from '../speech/useSpeech'
 import { VoiceMic } from '../ui/VoiceMic'
-import { DEMO_MR_REPORTS } from '../config/demoReportSentences'
-
-const DEMO_LOSS = DEMO_MR_REPORTS[0]!
 
 type Step = 'who' | 'otherName' | 'setup' | 'report' | 'gaps' | 'confirm'
 
@@ -39,6 +37,22 @@ function withParse(base: ReportDraft, text: string): ReportDraft {
   }
 }
 
+async function profileStepAfterMine(
+  setDraft: Dispatch<SetStateAction<ReportDraft>>,
+  setStep: Dispatch<SetStateAction<Step>>,
+) {
+  const pid = await getActiveProfileId()
+  const p = await db.profiles.get(pid)
+  setDraft((d) => ({
+    ...d,
+    forOther: false,
+    mobile: p?.mobile ?? d.mobile,
+    policy: p?.policyNumber ?? d.policy,
+    bankBranch: p?.bankBranch ?? d.bankBranch,
+  }))
+  setStep(p?.mobile && p?.policyNumber ? 'report' : 'setup')
+}
+
 export function ReportPage({
   lang,
   onLang,
@@ -49,24 +63,8 @@ export function ReportPage({
   const nav = useNavigate()
   const [step, setStep] = useState<Step>('who')
   const [draft, setDraft] = useState<ReportDraft>({ forOther: false })
-  const [freeText, setFreeText] = useState('')
   const [gapField, setGapField] = useState<'crop' | 'village' | 'time' | null>(null)
-  const [gapValue, setGapValue] = useState('')
   const [gapsAsked, setGapsAsked] = useState(0)
-  const [allowType, setAllowType] = useState(false)
-
-  useEffect(() => {
-    const sync = () => {
-      if (typeof navigator !== 'undefined' && !navigator.onLine) setAllowType(true)
-    }
-    sync()
-    window.addEventListener('offline', sync)
-    return () => window.removeEventListener('offline', sync)
-  }, [])
-
-  const applyParsed = (text: string) => {
-    setDraft((d) => withParse(d, text))
-  }
 
   const routeAfter = (next: ReportDraft, asked: number) => {
     if (!next.crop && asked < 3) {
@@ -88,19 +86,6 @@ export function ReportPage({
     setStep('confirm')
   }
 
-  const saveGap = () => {
-    const parsed = parseFreeReport(gapValue)
-    const next: ReportDraft = { ...draft }
-    if (gapField === 'crop') next.crop = parsed.crop ?? (gapValue as CropId)
-    if (gapField === 'village') next.village = parsed.village ?? gapValue
-    if (gapField === 'time') next.eventTimeIso = parsed.eventTimeIso ?? gapValue
-    setDraft(next)
-    setGapValue('')
-    const asked = gapsAsked + 1
-    setGapsAsked(asked)
-    routeAfter(next, asked)
-  }
-
   const confirm = async () => {
     const c = await createCaseFromDraft(draft)
     nav(`/case/${c.id}`)
@@ -110,7 +95,7 @@ export function ReportPage({
     if (step === 'who') return t(lang, 'whoQ')
     if (step === 'otherName') return t(lang, 'askOtherName')
     if (step === 'setup') return t(lang, 'setupSay')
-    if (step === 'report') return t(lang, 'sayLoss')
+    if (step === 'report') return t(lang, 'sayLossVoice')
     if (step === 'gaps') {
       if (gapField === 'crop') return t(lang, 'askCrop')
       if (gapField === 'village') return t(lang, 'askVillage')
@@ -126,7 +111,7 @@ export function ReportPage({
     if (command === 'english') onLang('en-IN')
     if (command === 'marathi') onLang('mr-IN')
     if (command === 'call') {
-      window.location.href = 'tel:14447'
+      dialHelpline()
       return
     }
     if (command === 'changeVillage') {
@@ -139,8 +124,7 @@ export function ReportPage({
       const who = classifyWho(text)
       if (!who) return
       if (who === 'mine') {
-        setDraft((d) => ({ ...d, forOther: false }))
-        setStep('setup')
+        void profileStepAfterMine(setDraft, setStep)
         return
       }
       const stripped = text
@@ -176,16 +160,9 @@ export function ReportPage({
       return
     }
     if (step === 'report') {
-      if (intent === 'yes' && freeText.trim()) {
-        const next = withParse(draft, freeText)
-        setDraft(next)
-        routeAfter(next, gapsAsked)
-        return
-      }
-      setFreeText(text)
       const next = withParse(draft, text)
       setDraft(next)
-      if (next.crop && next.village && next.eventTimeIso) routeAfter(next, gapsAsked)
+      routeAfter(next, gapsAsked)
       return
     }
     if (step === 'gaps' && gapField) {
@@ -195,7 +172,6 @@ export function ReportPage({
       if (gapField === 'village') next.village = parsed.village ?? text
       if (gapField === 'time') next.eventTimeIso = parsed.eventTimeIso ?? text
       setDraft(next)
-      setGapValue('')
       const asked = gapsAsked + 1
       setGapsAsked(asked)
       routeAfter(next, asked)
@@ -214,26 +190,13 @@ export function ReportPage({
   return (
     <div className="card rise flex flex-col gap-4">
       <SafetyBanner lang={lang} speakOnMount />
-      <VoiceMic lang={lang} prompt={prompt} onHeard={onHeard} onFallback={setAllowType} />
+      <VoiceMic lang={lang} prompt={prompt} onHeard={onHeard} />
       {step === 'who' && (
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
             className="btn primary flex-1 min-h-14 text-lg"
-            onClick={() => {
-              void (async () => {
-                const pid = await getActiveProfileId()
-                const p = await db.profiles.get(pid)
-                setDraft((d) => ({
-                  ...d,
-                  forOther: false,
-                  mobile: p?.mobile ?? d.mobile,
-                  policy: p?.policyNumber ?? d.policy,
-                  bankBranch: p?.bankBranch ?? d.bankBranch,
-                }))
-                setStep(p?.mobile && p?.policyNumber ? 'report' : 'setup')
-              })()
-            }}
+            onClick={() => void profileStepAfterMine(setDraft, setStep)}
           >
             {t(lang, 'mine')}
           </button>
@@ -249,107 +212,12 @@ export function ReportPage({
           </button>
         </div>
       )}
-      {allowType && step === 'setup' && (
-        <>
-          {draft.forOther && (
-            <input
-              className="input"
-              placeholder={t(lang, 'otherName')}
-              value={draft.otherName ?? ''}
-              onChange={(e) =>
-                setDraft((d) => ({ ...d, otherName: e.target.value }))
-              }
-            />
-          )}
-          <input
-            className="input"
-            placeholder={t(lang, 'mobilePh')}
-            inputMode="numeric"
-            value={draft.mobile ?? ''}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, mobile: e.target.value }))
-            }
-          />
-          <input
-            className="input"
-            placeholder={t(lang, 'policyPh')}
-            value={draft.policy ?? ''}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, policy: e.target.value }))
-            }
-          />
-          <input
-            className="input"
-            placeholder={t(lang, 'branchPh')}
-            value={draft.bankBranch ?? ''}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, bankBranch: e.target.value }))
-            }
-          />
-          <button type="button" className="btn primary" onClick={() => setStep('report')}>
-            {t(lang, 'yesNext')}
-          </button>
-        </>
-      )}
-      {step === 'report' && (
-        <>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => {
-              setFreeText(DEMO_LOSS)
-              const next = withParse(draft, DEMO_LOSS)
-              setDraft(next)
-              routeAfter(next, gapsAsked)
-            }}
-          >
-            {t(lang, 'demoInsertLoss')}
-          </button>
-          {allowType && (
-          <textarea
-            className="input min-h-32"
-            value={freeText}
-            onChange={(e) => {
-              setFreeText(e.target.value)
-              applyParsed(e.target.value)
-            }}
-          />
-          )}
-          {allowType && (
-            <button
-              type="button"
-              className="btn primary"
-              onClick={() => {
-                const next = withParse(draft, freeText)
-                setDraft(next)
-                routeAfter(next, gapsAsked)
-              }}
-            >
-              {t(lang, 'next')}
-            </button>
-          )}
-        </>
-      )}
       {step === 'gaps' && gapField && (
-        <>
-          <p>
-            {gapField === 'crop' && t(lang, 'askCrop')}
-            {gapField === 'village' && t(lang, 'askVillage')}
-            {gapField === 'time' && t(lang, 'askTime')}
-          </p>
-          {allowType && (
-          <input
-            className="input"
-            value={gapValue}
-            onChange={(e) => setGapValue(e.target.value)}
-          />
-          )}
-          {allowType && (
-            <button type="button" className="btn primary" onClick={saveGap}>
-              {t(lang, 'yes')}
-            </button>
-          )}
-        </>
+        <p className="text-lg">
+          {gapField === 'crop' && t(lang, 'askCrop')}
+          {gapField === 'village' && t(lang, 'askVillage')}
+          {gapField === 'time' && t(lang, 'askTime')}
+        </p>
       )}
       {step === 'confirm' && (
         <>

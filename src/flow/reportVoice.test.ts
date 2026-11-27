@@ -23,6 +23,7 @@ describe('report voice', () => {
     expect(voiceCommand('हिंदी')).toBe('hindi')
     expect(voiceCommand('English')).toBe('english')
     expect(voiceCommand('फोन करा')).toBe('call')
+    expect(voiceCommand('14447 वर कळवा')).toBe('call')
     expect(voiceCommand('गाव बदला')).toBe('changeVillage')
   })
 

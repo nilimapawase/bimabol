@@ -11,7 +11,6 @@ type Props = {
   lang: SpeechLang
   prompt: string
   onHeard: (text: string) => void
-  onFallback?: (typing: boolean) => void
 }
 
 function beep() {
@@ -29,7 +28,7 @@ function beep() {
   osc.onended = () => void ctx.close()
 }
 
-export function VoiceMic({ lang, prompt, onHeard, onFallback }: Props) {
+export function VoiceMic({ lang, prompt, onHeard }: Props) {
   const { speak, visibleOnly } = useSpeech(lang)
   const rec = useRecognition(lang)
   const [privacy, setPrivacy] = useState(shouldBlockMic)
@@ -46,10 +45,6 @@ export function VoiceMic({ lang, prompt, onHeard, onFallback }: Props) {
     if (holdTimer.current) clearTimeout(holdTimer.current)
     holdTimer.current = null
   }
-
-  useEffect(() => {
-    onFallback?.(rec.showTypedFallback || !rec.supported)
-  }, [onFallback, rec.showTypedFallback, rec.supported])
 
   useEffect(() => {
     if (!rec.listening) {
@@ -173,11 +168,8 @@ export function VoiceMic({ lang, prompt, onHeard, onFallback }: Props) {
       )}
       {waiting && <p className="text-center">{t(lang, 'stillListening')}</p>}
       {visibleOnly && <p className="text-center text-sm text-[var(--muted)]">{t(lang, 'noVoice')}</p>}
-      {rec.showTypedFallback && (
-        <p className="text-center text-sm text-[var(--muted)]">{t(lang, 'typeFallback')}</p>
-      )}
       {!rec.supported && (
-        <p className="text-center text-sm text-[var(--muted)]">{t(lang, 'typeFallback')}</p>
+        <p className="text-center text-sm text-[var(--muted)]">{t(lang, 'micRequired')}</p>
       )}
     </div>
   )

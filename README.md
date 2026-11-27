@@ -4,7 +4,7 @@ Marathi voice assistant for the first hours after hail, flood, or a similar loca
 
 The farmer speaks. BimaBol turns that into a record (crop, village, loss, time), reads it back, starts a conservative clock, reads the words for helpline **14447**, saves the SMS ticket, and keeps evidence on the phone. It does not file a claim, predict a payout, or replace 14447, the Crop Insurance App, the bank, or the agriculture office.
 
-Speaking and listening complete every step. The keyboard appears only after the microphone fails twice, or when there is no internet.
+Speaking and listening complete every step — there is **no typing fallback** in the report or case flows (use Chrome with the microphone). Large tap buttons (who, confirm) assist family members; evidence can still be ticked by tap or voice.
 
 ## 72-hour clock (where to see it)
 

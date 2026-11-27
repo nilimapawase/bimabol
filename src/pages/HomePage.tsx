@@ -22,9 +22,6 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
   const [cases, setCases] = useState<CaseRecord[]>([])
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [activeId, setActiveId] = useState('')
-  const [name, setName] = useState('')
-  const [mobile, setMobile] = useState('')
-  const [allowTypeProfile, setAllowTypeProfile] = useState(false)
   const [draftProfile, setDraftProfile] = useState('')
 
   const reload = async () => {
@@ -65,15 +62,11 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
       name: profileName.trim(),
       mobile: profileMobile.trim(),
     }).then(() => {
-      setName('')
-      setMobile('')
       setDraftProfile('')
       setActiveProfileId(id)
       return reload()
     })
   }
-
-  const addProfile = () => saveProfile(name, mobile)
 
   const onProfileVoice = (text: string) => {
     const raw = String(parseDigits(text))
@@ -142,33 +135,11 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
             </button>
           ))}
         </div>
-        {!allowTypeProfile ? (
-          <VoiceMic
-            lang={lang}
-            prompt={t(lang, 'profileVoiceSay')}
-            onHeard={onProfileVoice}
-            onFallback={(typing) => setAllowTypeProfile(typing)}
-          />
-        ) : (
-          <div className="mt-3 grid gap-2">
-            <input
-              className="input"
-              placeholder={t(lang, 'newName')}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <input
-              className="input"
-              placeholder={t(lang, 'newMobile')}
-              inputMode="numeric"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-            />
-            <button type="button" className="btn" onClick={addProfile}>
-              {t(lang, 'addProfile')}
-            </button>
-          </div>
-        )}
+        <VoiceMic
+          lang={lang}
+          prompt={t(lang, 'profileVoiceSay')}
+          onHeard={onProfileVoice}
+        />
       </section>
 
       <Link to="/report" className="hero-cta">

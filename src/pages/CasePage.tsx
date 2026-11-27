@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { ClockDisplay } from '../components/ClockDisplay'
-import { evidenceFromSpeech, spokenTicket } from '../flow/reportVoice'
+import { HELPLINE_TEL, dialHelpline } from '../constants/helpline'
+import { evidenceFromSpeech, spokenTicket, voiceCommand } from '../flow/reportVoice'
 import { parseConfirmIntent } from '../flow/intents'
 import { t } from '../i18n'
 import type { SpeechLang } from '../speech/useSpeech'
@@ -25,7 +26,6 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
   const [ticketInput, setTicketInput] = useState('')
   const [ticketRepeat, setTicketRepeat] = useState<string[] | null>(null)
   const [waExtra, setWaExtra] = useState(false)
-  const [typeFallback, setTypeFallback] = useState(false)
   const [ticketPrompt, setTicketPrompt] = useState('')
 
   const load = async () => {
@@ -47,7 +47,6 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       void Notification.requestPermission()
     }
-    if (typeof navigator !== 'undefined' && !navigator.onLine) setTypeFallback(true)
   }, [])
 
   const scriptLines = useMemo(() => {
@@ -106,12 +105,11 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
     return `https://wa.me/917065514447?text=${encodeURIComponent(text)}`
   }
 
-  const onCall = async () => {
+  const logCallTap = async () => {
     const ev = await appendEvent(c.events, 'call_tapped', {}, new Date().toISOString())
     const next = { ...c, events: [...c.events, ev] }
     await db.cases.put(next)
     setC(next)
-    window.location.href = 'tel:14447'
   }
 
   const onWa = async () => {
@@ -128,6 +126,11 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
   }
 
   const onHeard = (text: string) => {
+    if (voiceCommand(text) === 'call') {
+      dialHelpline()
+      void logCallTap()
+      return
+    }
     const kind = evidenceFromSpeech(text)
     if (kind === 'photos') {
       void (async () => {
@@ -156,14 +159,6 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
     const ticket = spokenTicket(text)
     setTicketInput(ticket)
     if (validateTicket(ticket)) setTicketRepeat(ticket.split(''))
-  }
-
-  const onTicketSubmit = () => {
-    if (!validateTicket(ticketInput)) {
-      alert(t(lang, 'ticketBad'))
-      return
-    }
-    setTicketRepeat(ticketInput.trim().split(''))
   }
 
   const confirmTicket = async () => {
@@ -230,15 +225,18 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
         lang={lang}
         prompt={ticketPrompt || t(lang, 'ticketAsk')}
         onHeard={onHeard}
-        onFallback={setTypeFallback}
       />
       <section className="card tilt">
         <h2 className="text-xl font-bold">{t(lang, 'scriptTitle')}</h2>
         <p className="mt-2 whitespace-pre-wrap text-lg">{scriptLines.join('\n')}</p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button type="button" className="btn primary" onClick={() => void onCall()}>
+          <a
+            href={HELPLINE_TEL}
+            className="btn primary no-underline text-inherit"
+            onClick={() => void logCallTap()}
+          >
             {t(lang, 'call')}
-          </button>
+          </a>
           <button type="button" className="btn" onClick={() => void onWa()}>
             {t(lang, 'wa')}
           </button>
@@ -255,26 +253,11 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
       <section className="rounded-xl border border-slate-700 p-4">
         <h2 className="text-lg font-bold">{t(lang, 'ticketTitle')}</h2>
         {!ticketRepeat ? (
-          <>
-            {typeFallback && (
-              <>
-                <input
-                  className="input"
-                  value={ticketInput}
-                  onChange={(e) => setTicketInput(e.target.value)}
-                  placeholder={t(lang, 'ticketPh')}
-                />
-                <button type="button" className="btn primary mt-2" onClick={onTicketSubmit}>
-                  {t(lang, 'ticketConfirm')}
-                </button>
-              </>
-            )}
-            {!typeFallback && ticketInput && (
-              <p className="text-[var(--gold)]">
-                {t(lang, 'heard')}: {ticketInput}
-              </p>
-            )}
-          </>
+          ticketInput ? (
+            <p className="text-[var(--gold)]">
+              {t(lang, 'heard')}: {ticketInput}
+            </p>
+          ) : null
         ) : (
           <>
             <p>

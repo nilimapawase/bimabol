@@ -16,7 +16,11 @@ export function voiceCommand(raw: string): VoiceCommand {
   if (/हिंदी|हिन्दी/.test(raw)) return 'hindi'
   if (/\benglish\b/i.test(raw)) return 'english'
   if (/मराठी/.test(raw)) return 'marathi'
-  if (/फोन करा|call now|कॉल कर/i.test(raw)) return 'call'
+  if (
+    /14447|१४४४७|फोन करा|फोन कर|कॉल कर|call\s*14447|call\s*now/i.test(raw) ||
+    /वर कळवा|वर कलवा|kalava|कळवा.*14447/i.test(raw)
+  )
+    return 'call'
   if (/हळू|धीरे|slow/i.test(raw)) return 'slow'
   if (/थांबा|थांब|stop|ruk/i.test(raw)) return 'stop'
   return null

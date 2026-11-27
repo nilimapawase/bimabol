@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import type { SpeechLang } from '../speech/useSpeech'
+import { HELPLINE_TEL } from '../constants/helpline'
 import { t } from '../i18n'
 
 type Props = {
@@ -98,7 +99,7 @@ export function Shell({ lang, onLangChange, children, onDeleteAll }: Props) {
             <button type="button" className="danger" onClick={() => setConfirmDelete(true)}>
               {t(lang, 'delete')}
             </button>
-            <a className="call" href="tel:14447">
+            <a className="call" href={HELPLINE_TEL}>
               {t(lang, 'call')}
             </a>
           </>
