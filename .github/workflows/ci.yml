@@ -20,7 +20,7 @@ jobs:
       - name: Wait for app
         run: |
           for i in $(seq 1 30); do
-            if curl -fsS http://localhost:9080/ >/dev/null; then exit 0; fi
+            if curl -fsS http://localhost:9191/ >/dev/null; then exit 0; fi
             sleep 3
           done
           docker compose logs

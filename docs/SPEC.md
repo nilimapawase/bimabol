@@ -4,7 +4,7 @@ PURPOSE
 Marathi-first voice PWA. After hail, flood/inundation, cloudburst or landslide damages an insured crop, the farmer (or family member / CSC operator) speaks what happened. The app builds a confirmed record, starts a conservative 72-hour clock, reads the exact words for helpline 14447, saves the SMS ticket number, keeps evidence, and produces a tamper-evident dated record. It does NOT file claims, predict payouts, give legal advice, or replace 14447, the Crop Insurance App, the bank or the agriculture office. Show: "हे सरकारी किंवा विमा कंपनीचे अॅप नाही."
 
 HARD RULES
-1. Public GitHub repo. `docker compose up --build` serves the app (host http://localhost:9080 → container 8080) with NO secret keys.
+1. Public GitHub repo. `docker compose up --build` serves the app (host http://localhost:9191 → container 8080) with NO secret keys.
 2. Substantial original code. No template-only code.
 3. Never commit secrets, .env, keys, evidence photos, node_modules, dist.
 4. No Aadhaar, GPS, bank account numbers, analytics, stored audio, login, or cloud copy of farmer data.

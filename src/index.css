@@ -63,6 +63,7 @@ textarea {
 
 .stage {
   perspective: 1100px;
+  padding-bottom: 9rem;
 }
 
 .brand-seal {

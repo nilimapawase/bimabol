@@ -2,7 +2,7 @@ services:
   bimabol:
     build: .
     ports:
-      - "9080:8080"
+      - "9191:8080"
     cap_drop:
       - ALL
     security_opt:

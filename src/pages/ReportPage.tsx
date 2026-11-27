@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { createCaseFromDraft, type ReportDraft } from '../db/caseService'
+import { getActiveProfileId, db } from '../db/database'
 import { parseConfirmIntent } from '../flow/intents'
 import { classifyWho, tenDigitMobile, voiceCommand } from '../flow/reportVoice'
 import { parseFreeReport, cropLabel, lossLabel } from '../parse/reportParser'
@@ -9,6 +10,9 @@ import type { CropId } from '../parse/vocab'
 import { t } from '../i18n'
 import type { SpeechLang } from '../speech/useSpeech'
 import { VoiceMic } from '../ui/VoiceMic'
+import { DEMO_MR_REPORTS } from '../config/demoReportSentences'
+
+const DEMO_LOSS = DEMO_MR_REPORTS[0]!
 
 type Step = 'who' | 'otherName' | 'setup' | 'report' | 'gaps' | 'confirm'
 
@@ -52,7 +56,12 @@ export function ReportPage({
   const [allowType, setAllowType] = useState(false)
 
   useEffect(() => {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) setAllowType(true)
+    const sync = () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) setAllowType(true)
+    }
+    sync()
+    window.addEventListener('offline', sync)
+    return () => window.removeEventListener('offline', sync)
   }, [])
 
   const applyParsed = (text: string) => {
@@ -206,31 +215,39 @@ export function ReportPage({
     <div className="card rise flex flex-col gap-4">
       <SafetyBanner lang={lang} speakOnMount />
       <VoiceMic lang={lang} prompt={prompt} onHeard={onHeard} onFallback={setAllowType} />
-      {step === 'who' && allowType && (
-        <>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                setDraft((d) => ({ ...d, forOther: false }))
-                setStep('setup')
-              }}
-            >
-              {t(lang, 'mine')}
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                setDraft((d) => ({ ...d, forOther: true }))
-                setStep('setup')
-              }}
-            >
-              {t(lang, 'other')}
-            </button>
-          </div>
-        </>
+      {step === 'who' && (
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className="btn primary flex-1 min-h-14 text-lg"
+            onClick={() => {
+              void (async () => {
+                const pid = await getActiveProfileId()
+                const p = await db.profiles.get(pid)
+                setDraft((d) => ({
+                  ...d,
+                  forOther: false,
+                  mobile: p?.mobile ?? d.mobile,
+                  policy: p?.policyNumber ?? d.policy,
+                  bankBranch: p?.bankBranch ?? d.bankBranch,
+                }))
+                setStep(p?.mobile && p?.policyNumber ? 'report' : 'setup')
+              })()
+            }}
+          >
+            {t(lang, 'mine')}
+          </button>
+          <button
+            type="button"
+            className="btn flex-1 min-h-14 text-lg"
+            onClick={() => {
+              setDraft((d) => ({ ...d, forOther: true }))
+              setStep('otherName')
+            }}
+          >
+            {t(lang, 'other')}
+          </button>
+        </div>
       )}
       {allowType && step === 'setup' && (
         <>
@@ -276,6 +293,18 @@ export function ReportPage({
       )}
       {step === 'report' && (
         <>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setFreeText(DEMO_LOSS)
+              const next = withParse(draft, DEMO_LOSS)
+              setDraft(next)
+              routeAfter(next, gapsAsked)
+            }}
+          >
+            {t(lang, 'demoInsertLoss')}
+          </button>
           {allowType && (
           <textarea
             className="input min-h-32"
@@ -325,20 +354,19 @@ export function ReportPage({
       {step === 'confirm' && (
         <>
           {draft.special && <p className="text-[var(--gold)]">{t(lang, 'specialRules')}</p>}
-          <p className="text-lg">
-            {t(lang, 'readback')}: {draft.crop ? cropLabel(draft.crop) : '—'}, {draft.village ?? '—'},{' '}
-            {draft.loss ? lossLabel(draft.loss) : '—'}, {draft.eventTimeIso ?? '—'}. {t(lang, 'right')}
-          </p>
-          {allowType && (
-            <div className="flex flex-wrap gap-3">
-              <button type="button" className="btn primary" onClick={() => void confirm()}>
-                {t(lang, 'yes')}
-              </button>
-              <button type="button" className="btn" onClick={() => setStep('report')}>
-                {t(lang, 'no')}
-              </button>
-            </div>
-          )}
+          <p className="text-lg">{readbackLine(draft, lang)}</p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="btn primary flex-1 min-h-14 text-lg"
+              onClick={() => void confirm()}
+            >
+              {t(lang, 'yes')}
+            </button>
+            <button type="button" className="btn flex-1 min-h-14 text-lg" onClick={() => setStep('report')}>
+              {t(lang, 'no')}
+            </button>
+          </div>
         </>
       )}
     </div>

@@ -42,7 +42,7 @@ Open that link on Android Chrome, allow the microphone, and add to Home screen.
 docker compose up --build
 ```
 
-Open **http://localhost:9080** on the host. Inside the container nginx still listens on port 8080; **9080** is used on the host so it does not clash with other software on port 8080. No `.env` is required.
+Open **http://localhost:9191** on the host. Inside the container nginx still listens on port 8080; **9191** is used on the host so it does not clash with other software on port 8080 or 9080. No `.env` is required.
 
 After you change code: run `docker compose up --build` again to refresh the container image.
 
