@@ -77,7 +77,12 @@ export function parseFreeReport(
     // ignore unless area context
   }
 
-  if (/वाळू|wild|animal|drought|pest/i.test(raw)) out.flagsSpecialLoss = true
+  if (
+    /वाळू|wild|animal|वन्य|प्राणी|drought|pest|व्यापक|widespread|inundat|पाणी साच/i.test(raw) ||
+    (out.crop === 'paddy' && out.loss === 'flood')
+  ) {
+    out.flagsSpecialLoss = true
+  }
 
   return out
 }

@@ -27,4 +27,12 @@ dist-ssr
 .env
 .cursor
 .vercel
+
+# Private planning notes. They stay on this PC and are not part of the public repo.
+docs/round1.txt
+docs/ROUND2_THREE_DAY_TRACKER.md
+docs/TODAY_PROMPT_RUNBOOK.md
+docs/BimaBol_Round2_Master_Plan.md
+docs/PLAN.md.md
+docs/archive/
 evidence/photos

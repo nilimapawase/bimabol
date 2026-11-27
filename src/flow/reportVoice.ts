@@ -1,6 +1,23 @@
 import { parseDigits } from '../parse/digits'
 import { parseConfirmIntent } from './intents'
 
+export type VoiceCommand =
+  | 'hindi'
+  | 'english'
+  | 'marathi'
+  | 'call'
+  | 'changeVillage'
+  | null
+
+export function voiceCommand(raw: string): VoiceCommand {
+  if (/गाव बदला|गाँव बदल|change village/i.test(raw)) return 'changeVillage'
+  if (/हिंदी|हिन्दी/.test(raw)) return 'hindi'
+  if (/\benglish\b/i.test(raw)) return 'english'
+  if (/मराठी/.test(raw)) return 'marathi'
+  if (/फोन करा|call now|कॉल कर/i.test(raw)) return 'call'
+  return null
+}
+
 export function classifyWho(raw: string): 'mine' | 'other' | null {
   if (/दुसर|दुसऱ|किसी|someone|other|else/i.test(raw)) return 'other'
   if (/माझ|मेरा|मेरी|mine|myself|स्वत/i.test(raw)) return 'mine'

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { createCaseFromDraft, type ReportDraft } from '../db/caseService'
 import { parseConfirmIntent } from '../flow/intents'
-import { classifyWho, tenDigitMobile } from '../flow/reportVoice'
+import { classifyWho, tenDigitMobile, voiceCommand } from '../flow/reportVoice'
 import { parseFreeReport, cropLabel, lossLabel } from '../parse/reportParser'
 import type { CropId } from '../parse/vocab'
 import { t } from '../i18n'
@@ -23,10 +23,17 @@ function withParse(base: ReportDraft, text: string): ReportDraft {
     loss: base.loss ?? p.loss,
     area: base.area ?? p.area,
     eventTimeIso: base.eventTimeIso ?? p.eventTimeIso,
+    special: base.special || p.flagsSpecialLoss || false,
   }
 }
 
-export function ReportPage({ lang }: { lang: SpeechLang }) {
+export function ReportPage({
+  lang,
+  onLang,
+}: {
+  lang: SpeechLang
+  onLang: (lang: SpeechLang) => void
+}) {
   const nav = useNavigate()
   const [step, setStep] = useState<Step>('who')
   const [draft, setDraft] = useState<ReportDraft>({ forOther: false })
@@ -34,6 +41,7 @@ export function ReportPage({ lang }: { lang: SpeechLang }) {
   const [gapField, setGapField] = useState<'crop' | 'village' | 'time' | null>(null)
   const [gapValue, setGapValue] = useState('')
   const [gapsAsked, setGapsAsked] = useState(0)
+  const [allowType, setAllowType] = useState(false)
 
   const applyParsed = (text: string) => {
     setDraft((d) => withParse(d, text))
@@ -93,6 +101,19 @@ export function ReportPage({ lang }: { lang: SpeechLang }) {
             : `${t(lang, 'readback')}. ${t(lang, 'right')}`
 
   const onHeard = (text: string) => {
+    const command = voiceCommand(text)
+    if (command === 'hindi') onLang('hi-IN')
+    if (command === 'english') onLang('en-IN')
+    if (command === 'marathi') onLang('mr-IN')
+    if (command === 'call') {
+      window.location.href = 'tel:14447'
+      return
+    }
+    if (command === 'changeVillage') {
+      setGapField('village')
+      setStep('gaps')
+      return
+    }
     const intent = parseConfirmIntent(text)
     if (step === 'who') {
       const who = classifyWho(text)
@@ -146,13 +167,17 @@ export function ReportPage({ lang }: { lang: SpeechLang }) {
     if (step === 'confirm') {
       if (intent === 'yes') void confirm()
       if (intent === 'no') setStep('report')
+      if (intent === 'change') {
+        setGapField('village')
+        setStep('gaps')
+      }
     }
   }
 
   return (
     <div className="card rise flex flex-col gap-4">
       <SafetyBanner lang={lang} />
-      <VoiceMic lang={lang} prompt={prompt} onHeard={onHeard} />
+      <VoiceMic lang={lang} prompt={prompt} onHeard={onHeard} onFallback={setAllowType} />
       {step === 'who' && (
         <>
           <div className="flex flex-wrap gap-3">
@@ -179,7 +204,7 @@ export function ReportPage({ lang }: { lang: SpeechLang }) {
           </div>
         </>
       )}
-      {step === 'setup' && (
+      {allowType && step === 'setup' && (
         <>
           {draft.forOther && (
             <input
@@ -223,6 +248,7 @@ export function ReportPage({ lang }: { lang: SpeechLang }) {
       )}
       {step === 'report' && (
         <>
+          {allowType && (
           <textarea
             className="input min-h-32"
             value={freeText}
@@ -231,6 +257,7 @@ export function ReportPage({ lang }: { lang: SpeechLang }) {
               applyParsed(e.target.value)
             }}
           />
+          )}
           <button
             type="button"
             className="btn primary"
@@ -251,11 +278,13 @@ export function ReportPage({ lang }: { lang: SpeechLang }) {
             {gapField === 'village' && t(lang, 'askVillage')}
             {gapField === 'time' && t(lang, 'askTime')}
           </p>
+          {allowType && (
           <input
             className="input"
             value={gapValue}
             onChange={(e) => setGapValue(e.target.value)}
           />
+          )}
           <button type="button" className="btn primary" onClick={saveGap}>
             {t(lang, 'yes')}
           </button>
@@ -268,6 +297,7 @@ export function ReportPage({ lang }: { lang: SpeechLang }) {
       )}
       {step === 'confirm' && (
         <>
+          {draft.special && <p className="text-[var(--gold)]">{t(lang, 'specialRules')}</p>}
           <p className="text-lg">
             {t(lang, 'readback')}: {draft.crop ? cropLabel(draft.crop) : '—'}, {draft.village ?? '—'},{' '}
             {draft.loss ? lossLabel(draft.loss) : '—'}, {draft.eventTimeIso ?? '—'}. {t(lang, 'right')}

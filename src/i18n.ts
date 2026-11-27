@@ -106,6 +106,11 @@ const copy = {
     typeFallback: 'नीट ऐकू आले नाही. खाली टाइप करा.',
     ticketAsk: 'फोन झाल्यावर SMS मधील तिकीट क्रमांक सांगा.',
     setupSay: 'मोबाईल, विमा क्रमांक, मग शाखेचे नाव सांगा. शेवटी हो म्हणा.',
+    openLine: 'पिकाचे नुकसान झाले असेल तर मला सांगा.',
+    stillListening: 'मी ऐकत आहे. तुम्ही बोलू शकता.',
+    lowConf: 'नीट ऐकू आले नाही. कृपया पुन्हा सांगा.',
+    specialRules: 'नियम वेगळे असू शकतात. १४४४७ वर विचारा.',
+    clockSpeak: '७२ तासांचे घड्याळ सुरू. वाट पाहू नका. आत्ताच कळवा.',
   },
   'hi-IN': {
     brandSub: '७२ घंटे · रिकॉर्ड इसी फ़ोन पर',
@@ -212,6 +217,11 @@ const copy = {
     typeFallback: 'ठीक से नहीं सुना. नीचे लिखें.',
     ticketAsk: 'कॉल के बाद SMS का टिकट नंबर बोलें.',
     setupSay: 'मोबाइल, बीमा नंबर, फिर शाखा का नाम बोलें. अंत में हाँ कहें.',
+    openLine: 'अगर फसल का नुकसान हुआ हो तो मुझे बताएँ.',
+    stillListening: 'मैं सुन रहा हूँ. आप बोल सकते हैं.',
+    lowConf: 'ठीक से नहीं सुना. कृपया फिर बोलें.',
+    specialRules: 'नियम अलग हो सकते हैं. १४४४७ पर पूछें.',
+    clockSpeak: '७२ घंटे की घड़ी शुरू. इंतज़ार न करें. अभी बताएँ.',
   },
   'en-IN': {
     brandSub: '72 hours · record stays on this phone',
@@ -318,6 +328,11 @@ const copy = {
     typeFallback: 'I did not hear that clearly. Type below.',
     ticketAsk: 'After the call, say the ticket number from the SMS.',
     setupSay: 'Say the mobile, the policy number, then the branch name. Then say yes.',
+    openLine: 'If the crop is damaged, tell me.',
+    stillListening: 'I am listening. You can speak.',
+    lowConf: 'I did not hear that clearly. Please say it again.',
+    specialRules: 'The rules may be different. Ask 14447.',
+    clockSpeak: 'The 72-hour clock has started. Do not wait. Tell them now.',
   },
 } as const
 

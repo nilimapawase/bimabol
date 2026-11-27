@@ -185,7 +185,7 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
       <p className={ok ? 'text-emerald-400' : 'text-amber-400'}>
         {ok ? t(lang, 'integrityOk') : t(lang, 'integrityBad')}
       </p>
-      <VoiceMic lang={lang} prompt={t(lang, 'ticketAsk')} onHeard={onHeard} />
+      <VoiceMic lang={lang} prompt={`${t(lang, 'clockSpeak')} ${t(lang, 'ticketAsk')}`} onHeard={onHeard} />
       <section className="card tilt">
         <h2 className="text-xl font-bold">{t(lang, 'scriptTitle')}</h2>
         <p className="mt-2 whitespace-pre-wrap text-lg">{scriptLines.join('\n')}</p>

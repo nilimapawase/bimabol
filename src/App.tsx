@@ -34,7 +34,19 @@ function App() {
     >
       <Routes>
         <Route path="/" element={<HomePage key={resetKey} lang={lang} />} />
-        <Route path="/report" element={<ReportPage key={resetKey} lang={lang} />} />
+        <Route
+          path="/report"
+          element={
+            <ReportPage
+              key={resetKey}
+              lang={lang}
+              onLang={(next) => {
+                sessionStorage.setItem('bimabol-lang', next)
+                setLang(next)
+              }}
+            />
+          }
+        />
         <Route path="/case/:id" element={<CasePage lang={lang} />} />
         <Route path="/case/:id/print" element={<PrintPage lang={lang} />} />
         <Route path="/demo" element={<DemoPage lang={lang} />} />

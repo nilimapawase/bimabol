@@ -3,8 +3,8 @@
 | Time | Show | Say |
 |------|------|-----|
 | 0:00–0:15 | Title | 72 hours to report crop loss. |
-| 0:15–0:35 | Open app, privacy, **नुकसान सांगा** | Voice-first; typing works too. |
-| 0:35–1:10 | Type/speak soybean hail; confirm **हो**; clock | Confirms before saving. |
+| 0:15–0:35 | Open app, privacy, **नुकसान सांगा** | The farmer speaks. The keyboard stays hidden. |
+| 0:35–1:10 | Speak soybean hail; confirm **हो**; clock | The app reads the record back before saving. |
 | 1:10–1:35 | Case: script, Call 14447, WhatsApp | Exact helpline words. |
 | 1:35–1:55 | Ticket AB12CD char repeat | Saves ticket with time. |
 | 1:55–2:15 | Photo evidence tick | On-device, SHA-256, no GPS. |

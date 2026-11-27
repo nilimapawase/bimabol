@@ -18,6 +18,7 @@ export type ReportDraft = {
   loss?: LossId
   area?: string
   eventTimeIso?: string
+  special?: boolean
 }
 
 function istNow(): string {

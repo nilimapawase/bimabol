@@ -13,9 +13,10 @@ import {
 import type { CaseRecord, Profile } from '../db/types'
 import { cropLabel, lossLabel } from '../parse/reportParser'
 import { t } from '../i18n'
-import type { SpeechLang } from '../speech/useSpeech'
+import { useSpeech, type SpeechLang } from '../speech/useSpeech'
 
 export function HomePage({ lang }: { lang: SpeechLang }) {
+  const { speak } = useSpeech(lang)
   const [cases, setCases] = useState<CaseRecord[]>([])
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [activeId, setActiveId] = useState('')
@@ -32,6 +33,10 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
   useEffect(() => {
     void reload()
   }, [])
+
+  useEffect(() => {
+    speak(t(lang, 'openLine'))
+  }, [lang, speak])
 
   const board = useMemo(() => {
     const withTicket = cases.filter((c) => c.ticket).length
