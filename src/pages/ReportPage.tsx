@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { createCaseFromDraft, type ReportDraft } from '../db/caseService'
@@ -42,6 +42,10 @@ export function ReportPage({
   const [gapValue, setGapValue] = useState('')
   const [gapsAsked, setGapsAsked] = useState(0)
   const [allowType, setAllowType] = useState(false)
+
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) setAllowType(true)
+  }, [])
 
   const applyParsed = (text: string) => {
     setDraft((d) => withParse(d, text))
@@ -178,7 +182,7 @@ export function ReportPage({
     <div className="card rise flex flex-col gap-4">
       <SafetyBanner lang={lang} />
       <VoiceMic lang={lang} prompt={prompt} onHeard={onHeard} onFallback={setAllowType} />
-      {step === 'who' && (
+      {step === 'who' && allowType && (
         <>
           <div className="flex flex-wrap gap-3">
             <button
@@ -258,17 +262,19 @@ export function ReportPage({
             }}
           />
           )}
-          <button
-            type="button"
-            className="btn primary"
-            onClick={() => {
-              const next = withParse(draft, freeText)
-              setDraft(next)
-              routeAfter(next, gapsAsked)
-            }}
-          >
-            {t(lang, 'next')}
-          </button>
+          {allowType && (
+            <button
+              type="button"
+              className="btn primary"
+              onClick={() => {
+                const next = withParse(draft, freeText)
+                setDraft(next)
+                routeAfter(next, gapsAsked)
+              }}
+            >
+              {t(lang, 'next')}
+            </button>
+          )}
         </>
       )}
       {step === 'gaps' && gapField && (
@@ -285,15 +291,12 @@ export function ReportPage({
             onChange={(e) => setGapValue(e.target.value)}
           />
           )}
-          <button type="button" className="btn primary" onClick={saveGap}>
-            {t(lang, 'yes')}
-          </button>
+          {allowType && (
+            <button type="button" className="btn primary" onClick={saveGap}>
+              {t(lang, 'yes')}
+            </button>
+          )}
         </>
-      )}
-      {step === 'gaps' && !gapField && (
-        <button type="button" className="btn primary" onClick={() => setStep('confirm')}>
-          पुष्टीकडे
-        </button>
       )}
       {step === 'confirm' && (
         <>
@@ -302,20 +305,16 @@ export function ReportPage({
             {t(lang, 'readback')}: {draft.crop ? cropLabel(draft.crop) : '—'}, {draft.village ?? '—'},{' '}
             {draft.loss ? lossLabel(draft.loss) : '—'}, {draft.eventTimeIso ?? '—'}. {t(lang, 'right')}
           </p>
-          <div className="flex flex-wrap gap-3">
-            <button type="button" className="btn primary" onClick={() => void confirm()}>
-              {t(lang, 'yes')}
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                setStep('report')
-              }}
-            >
-              {t(lang, 'no')}
-            </button>
-          </div>
+          {allowType && (
+            <div className="flex flex-wrap gap-3">
+              <button type="button" className="btn primary" onClick={() => void confirm()}>
+                {t(lang, 'yes')}
+              </button>
+              <button type="button" className="btn" onClick={() => setStep('report')}>
+                {t(lang, 'no')}
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

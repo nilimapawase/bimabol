@@ -13,7 +13,9 @@ import {
 import type { CaseRecord, Profile } from '../db/types'
 import { cropLabel, lossLabel } from '../parse/reportParser'
 import { t } from '../i18n'
+import { parseDigits } from '../parse/digits'
 import { useSpeech, type SpeechLang } from '../speech/useSpeech'
+import { VoiceMic } from '../ui/VoiceMic'
 
 export function HomePage({ lang }: { lang: SpeechLang }) {
   const { speak } = useSpeech(lang)
@@ -22,6 +24,8 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
   const [activeId, setActiveId] = useState('')
   const [name, setName] = useState('')
   const [mobile, setMobile] = useState('')
+  const [allowTypeProfile, setAllowTypeProfile] = useState(false)
+  const [draftProfile, setDraftProfile] = useState('')
 
   const reload = async () => {
     const pid = await getActiveProfileId()
@@ -53,19 +57,38 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
     return { withTicket, evidenceDone, soonest }
   }, [cases])
 
-  const addProfile = () => {
-    if (!name.trim()) return
+  const saveProfile = (profileName: string, profileMobile: string) => {
+    if (!profileName.trim()) return
     const id = crypto.randomUUID()
     void upsertProfile({
       id,
-      name: name.trim(),
-      mobile: mobile.trim(),
+      name: profileName.trim(),
+      mobile: profileMobile.trim(),
     }).then(() => {
       setName('')
       setMobile('')
+      setDraftProfile('')
       setActiveProfileId(id)
       return reload()
     })
+  }
+
+  const addProfile = () => saveProfile(name, mobile)
+
+  const onProfileVoice = (text: string) => {
+    const raw = String(parseDigits(text))
+    const digits = raw.replace(/\D/g, '').slice(-10)
+    const maybeName = text
+      .replace(/\d/g, ' ')
+      .replace(/[०-९]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (digits.length === 10) {
+      saveProfile(maybeName || draftProfile || t(lang, 'newName'), digits)
+      return
+    }
+    setDraftProfile((d) => (d ? `${d} ${maybeName}` : maybeName))
+    speak(t(lang, 'setupSay'))
   }
 
   return (
@@ -90,7 +113,12 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
         </div>
         {board.soonest && (
           <div className="mt-3">
-            <ClockDisplay eventTimeIso={board.soonest.eventTimeIso} lang={lang} />
+            <ClockDisplay
+              eventTimeIso={board.soonest.eventTimeIso}
+              lang={lang}
+              caseId={board.soonest.id}
+              speakReminders
+            />
           </div>
         )}
       </section>
@@ -114,24 +142,33 @@ export function HomePage({ lang }: { lang: SpeechLang }) {
             </button>
           ))}
         </div>
-        <div className="mt-3 grid gap-2">
-          <input
-            className="input"
-            placeholder={t(lang, 'newName')}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+        {!allowTypeProfile ? (
+          <VoiceMic
+            lang={lang}
+            prompt={t(lang, 'profileVoiceSay')}
+            onHeard={onProfileVoice}
+            onFallback={(typing) => setAllowTypeProfile(typing)}
           />
-          <input
-            className="input"
-            placeholder={t(lang, 'newMobile')}
-            inputMode="numeric"
-            value={mobile}
-            onChange={(e) => setMobile(e.target.value)}
-          />
-          <button type="button" className="btn" onClick={addProfile}>
-            {t(lang, 'addProfile')}
-          </button>
-        </div>
+        ) : (
+          <div className="mt-3 grid gap-2">
+            <input
+              className="input"
+              placeholder={t(lang, 'newName')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <input
+              className="input"
+              placeholder={t(lang, 'newMobile')}
+              inputMode="numeric"
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value)}
+            />
+            <button type="button" className="btn" onClick={addProfile}>
+              {t(lang, 'addProfile')}
+            </button>
+          </div>
+        )}
       </section>
 
       <Link to="/report" className="hero-cta">

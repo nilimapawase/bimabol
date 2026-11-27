@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { t } from '../i18n'
 import { parseConfirmIntent } from '../flow/intents'
 import { PrivacyNote, shouldBlockMic } from '../speech/PrivacyNote'
+import { mostlyLatin } from '../speech/latinHeavy'
 import { useRecognition } from '../speech/useRecognition'
 import { useSpeech, type SpeechLang } from '../speech/useSpeech'
 
@@ -35,7 +36,15 @@ export function VoiceMic({ lang, prompt, onHeard, onFallback }: Props) {
   const [pending, setPending] = useState('')
   const heard = useRef(onHeard)
   const prev = useRef(false)
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const holdMode = useRef(false)
+  const sttRetry = useRef<0 | 1 | 2>(0)
   heard.current = onHeard
+
+  const clearHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current)
+    holdTimer.current = null
+  }
 
   useEffect(() => {
     onFallback?.(rec.showTypedFallback || !rec.supported)
@@ -55,11 +64,32 @@ export function VoiceMic({ lang, prompt, onHeard, onFallback }: Props) {
   }, [prompt, privacy, speak])
 
   useEffect(() => {
+    if (rec.lastNoise) {
+      speak(t(lang, 'noiseHigh'))
+      rec.clearNoise()
+    }
+  }, [rec.lastNoise, rec, lang, speak])
+
+  useEffect(() => {
     const was = prev.current
     prev.current = rec.listening
     if (was && !rec.listening) {
       const text = rec.transcript.trim()
       const conf = rec.confidence
+      if (
+        text &&
+        lang === 'mr-IN' &&
+        mostlyLatin(text) &&
+        sttRetry.current < 2
+      ) {
+        sttRetry.current = (sttRetry.current + 1) as 1 | 2
+        const alt: SpeechLang = sttRetry.current === 1 ? 'en-IN' : 'hi-IN'
+        rec.clearTranscript()
+        beep()
+        rec.start(alt)
+        return
+      }
+      sttRetry.current = 0
       if (text) {
         if (pending && parseConfirmIntent(text) === 'yes') {
           heard.current(pending)
@@ -75,24 +105,47 @@ export function VoiceMic({ lang, prompt, onHeard, onFallback }: Props) {
       }
       rec.clearTranscript()
     }
-  }, [rec.listening, rec.transcript, rec])
+  }, [rec.listening, rec.transcript, rec, lang, pending, speak])
 
   return (
     <div className="voice-box">
       <PrivacyNote open={privacy} onDismiss={() => setPrivacy(false)} />
       <p className="text-lg">{prompt}</p>
+      <p className="text-center text-sm text-[var(--muted)]">{t(lang, 'holdMic')}</p>
       <button
         type="button"
         className={`mic-orb ${rec.listening ? 'live' : ''}`}
         disabled={privacy || !rec.supported}
         aria-pressed={rec.listening}
         aria-label={rec.listening ? t(lang, 'micStop') : t(lang, 'micStart')}
-        onClick={() => {
-          if (rec.listening) rec.stop()
-          else {
+        onPointerDown={(e) => {
+          if (privacy || !rec.supported) return
+          e.preventDefault()
+          holdMode.current = false
+          clearHold()
+          holdTimer.current = setTimeout(() => {
+            holdMode.current = true
+            if (!rec.listening) {
+              beep()
+              rec.start()
+            }
+          }, 400)
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }}
+        onPointerUp={(e) => {
+          clearHold()
+          if (holdMode.current) rec.stop()
+          else if (!rec.listening) {
             beep()
             rec.start()
-          }
+          } else rec.stop()
+          holdMode.current = false
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }}
+        onPointerCancel={() => {
+          clearHold()
+          if (holdMode.current) rec.stop()
+          holdMode.current = false
         }}
       >
         {rec.listening ? t(lang, 'micStop') : t(lang, 'micStart')}

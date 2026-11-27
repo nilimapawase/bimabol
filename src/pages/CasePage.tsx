@@ -23,6 +23,7 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
   const [ticketInput, setTicketInput] = useState('')
   const [ticketRepeat, setTicketRepeat] = useState<string[] | null>(null)
   const [waExtra, setWaExtra] = useState(false)
+  const [typeFallback, setTypeFallback] = useState(false)
 
   const load = async () => {
     if (!id) return
@@ -38,6 +39,13 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
   useEffect(() => {
     void load()
   }, [id])
+
+  useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      void Notification.requestPermission()
+    }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) setTypeFallback(true)
+  }, [])
 
   if (!c) {
     return (
@@ -181,11 +189,21 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
   return (
     <div className="flex flex-col gap-4">
       <SafetyBanner lang={lang} />
-      <ClockDisplay eventTimeIso={c.eventTimeIso} lang={lang} />
+      <ClockDisplay
+        eventTimeIso={c.eventTimeIso}
+        lang={lang}
+        caseId={c.id}
+        speakReminders
+      />
       <p className={ok ? 'text-emerald-400' : 'text-amber-400'}>
         {ok ? t(lang, 'integrityOk') : t(lang, 'integrityBad')}
       </p>
-      <VoiceMic lang={lang} prompt={`${t(lang, 'clockSpeak')} ${t(lang, 'ticketAsk')}`} onHeard={onHeard} />
+      <VoiceMic
+        lang={lang}
+        prompt={`${t(lang, 'clockSpeak')} ${t(lang, 'ticketAsk')}`}
+        onHeard={onHeard}
+        onFallback={setTypeFallback}
+      />
       <section className="card tilt">
         <h2 className="text-xl font-bold">{t(lang, 'scriptTitle')}</h2>
         <p className="mt-2 whitespace-pre-wrap text-lg">{scriptLines.join('\n')}</p>
@@ -210,15 +228,24 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
         <h2 className="text-lg font-bold">{t(lang, 'ticketTitle')}</h2>
         {!ticketRepeat ? (
           <>
-            <input
-              className="input"
-              value={ticketInput}
-              onChange={(e) => setTicketInput(e.target.value)}
-              placeholder={t(lang, 'ticketPh')}
-            />
-            <button type="button" className="btn primary mt-2" onClick={onTicketSubmit}>
-              {t(lang, 'ticketConfirm')}
-            </button>
+            {typeFallback && (
+              <>
+                <input
+                  className="input"
+                  value={ticketInput}
+                  onChange={(e) => setTicketInput(e.target.value)}
+                  placeholder={t(lang, 'ticketPh')}
+                />
+                <button type="button" className="btn primary mt-2" onClick={onTicketSubmit}>
+                  {t(lang, 'ticketConfirm')}
+                </button>
+              </>
+            )}
+            {!typeFallback && ticketInput && (
+              <p className="text-[var(--gold)]">
+                {t(lang, 'heard')}: {ticketInput}
+              </p>
+            )}
           </>
         ) : (
           <>
@@ -249,6 +276,7 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
           <li>{c.evidence.witness ? '✓' : '○'} {t(lang, 'witness')}</li>
           <li>{c.evidence.survey ? '✓' : '○'} {t(lang, 'survey')}</li>
         </ul>
+        <p className="text-sm text-[var(--muted)]">{t(lang, 'geotagNote')}</p>
         <input
           type="file"
           accept="image/*"
@@ -256,6 +284,7 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
           className="mt-2"
           onChange={(e) => void onPhoto(e.target.files?.[0] ?? null)}
         />
+        {typeFallback && (
         <div className="mt-2 flex flex-wrap gap-2">
           {(['policy', 'passbook', 'witness', 'survey'] as const).map((k) => (
             <button
@@ -285,6 +314,7 @@ export function CasePage({ lang }: { lang: SpeechLang }) {
             </button>
           ))}
         </div>
+        )}
       </section>
       <section className="flex flex-wrap gap-3">
         <button type="button" className="btn" onClick={exportJson}>

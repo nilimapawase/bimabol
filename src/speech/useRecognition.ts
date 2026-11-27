@@ -25,6 +25,7 @@ export function useRecognition(lang: SpeechLang) {
   const [failureCount, setFailureCount] = useState(0)
   const [permissionDenied, setPermissionDenied] = useState(false)
   const [supported, setSupported] = useState(true)
+  const [lastNoise, setLastNoise] = useState(false)
   const recRef = useRef<SpeechRecognition | null>(null)
 
   useEffect(() => {
@@ -42,17 +43,18 @@ export function useRecognition(lang: SpeechLang) {
     setListening(false)
   }, [])
 
-  const start = useCallback(() => {
+  const start = useCallback((overrideLang?: SpeechLang) => {
     const Ctor = getRecognitionCtor()
     if (!Ctor) {
       setSupported(false)
       return
     }
+    const listenLang = overrideLang ?? lang
     recRef.current?.abort()
     const rec = new Ctor()
     rec.continuous = true
     rec.interimResults = true
-    rec.lang = lang
+    rec.lang = listenLang
     rec.maxAlternatives = 1
 
     rec.onstart = () => setListening(true)
@@ -75,6 +77,9 @@ export function useRecognition(lang: SpeechLang) {
         setFailureCount((c) => c + 1)
       } else if (FAILURE_ERRORS.has(event.error)) {
         setFailureCount((c) => c + 1)
+      }
+      if (event.error === 'audio-capture') {
+        setLastNoise(true)
       }
       setListening(false)
     }
@@ -102,6 +107,8 @@ export function useRecognition(lang: SpeechLang) {
     setConfidence(null)
   }, [])
 
+  const clearNoise = useCallback(() => setLastNoise(false), [])
+
   return {
     listening,
     transcript,
@@ -114,6 +121,8 @@ export function useRecognition(lang: SpeechLang) {
     toggle,
     resetFailures,
     clearTranscript,
+    lastNoise,
+    clearNoise,
     showTypedFallback: failureCount >= 2 || permissionDenied || !supported,
   }
 }
