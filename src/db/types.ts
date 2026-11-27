@@ -16,6 +16,9 @@ export type CaseRecord = {
   createdAt: string
   forOtherFarmer: boolean
   otherFarmerName?: string
+  mobile?: string
+  policyNumber?: string
+  bankBranch?: string
   crop?: CropId
   village?: string
   taluka?: string
@@ -44,4 +47,5 @@ export type PhotoBlob = {
   sha256: string
   capturedAt: string
   mime: string
+  blob?: Blob
 }

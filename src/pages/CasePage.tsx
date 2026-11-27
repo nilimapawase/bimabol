@@ -9,7 +9,7 @@ import { saveTicket, validateTicket } from '../db/caseService'
 import type { CaseRecord } from '../db/types'
 import { cropLabel, lossLabel } from '../parse/reportParser'
 import { appendEvent } from '../domain/hashChain'
-import { sha256Hex } from '../domain/hashChain'
+import { processPhotoFile } from '../utils/photo'
 
 export function CasePage() {
   const { id } = useParams()
@@ -50,6 +50,8 @@ export function CasePage() {
     c.crop && `माझ्या ${cropLabel(c.crop)} पिकाचे`,
     c.loss && `${lossLabel(c.loss)} मुळे नुकसान झाले.`,
     c.eventTimeIso && `घटना ${c.eventTimeIso} ला झाली.`,
+    c.policyNumber && `पीक विमा क्रमांक ${c.policyNumber}.`,
+    c.mobile && `मोबाईल ${c.mobile}.`,
     'कृपया तिकीट क्रमांक द्या.',
   ].filter(Boolean)
 
@@ -58,9 +60,8 @@ export function CasePage() {
   const waUrl = () => {
     let text = summary
     if (waExtra) {
-      const prof = c.profileId
-      // policy/mobile only if ticked — loaded from profile in real use
-      void prof
+      if (c.policyNumber) text += ` Policy: ${c.policyNumber}.`
+      if (c.mobile) text += ` Mobile: ${c.mobile}.`
     }
     return `https://wa.me/917065514447?text=${encodeURIComponent(text)}`
   }
@@ -91,7 +92,7 @@ export function CasePage() {
       alert('तिकीट ४–३० अक्षरे/अंक असावे.')
       return
     }
-    setTicketRepeat(ticketInput.replace(/[\s-]/g, '').split(''))
+    setTicketRepeat(ticketInput.trim().split(''))
   }
 
   const confirmTicket = async () => {
@@ -104,16 +105,14 @@ export function CasePage() {
 
   const onPhoto = async (file: File | null) => {
     if (!file || !id) return
-    const buf = await file.arrayBuffer()
-    const hash = await sha256Hex(
-      String.fromCharCode(...new Uint8Array(buf).slice(0, 5000)),
-    )
+    const { blob, sha256 } = await processPhotoFile(file)
     await db.photos.add({
       id: crypto.randomUUID(),
       caseId: id,
-      sha256: hash,
+      sha256,
       capturedAt: new Date().toISOString(),
-      mime: file.type,
+      mime: 'image/jpeg',
+      blob,
     })
     const ev = await appendEvent(
       c.events,
@@ -255,6 +254,55 @@ export function CasePage() {
           Printable record
         </Link>
       </section>
+      {c.profileId === 'demo-farmer' && (
+        <section className="rounded border border-dashed border-slate-600 p-3 text-base">
+          <p className="text-slate-400">डेमो only</p>
+          <button
+            type="button"
+            className="btn mt-2"
+            onClick={() => {
+              if (!c.events.length) return
+              const tampered = [...c.events]
+              tampered[0] = {
+                ...tampered[0]!,
+                payload: { ...(tampered[0]!.payload as object), tampered: true },
+              }
+              const next = { ...c, events: tampered }
+              void db.cases.put(next).then(async () => {
+                setC(next)
+                setOk(await verifyChain(next.events))
+              })
+            }}
+          >
+            Demo: tamper with record
+          </button>
+          <button
+            type="button"
+            className="btn mt-2 ml-2"
+            onClick={() => {
+              void (async () => {
+                const ev = await appendEvent(
+                  [],
+                  'report_confirmed',
+                  {
+                    crop: c.crop,
+                    village: c.village,
+                    loss: c.loss,
+                    eventTimeIso: c.eventTimeIso,
+                  },
+                  c.createdAt,
+                )
+                const next = { ...c, events: [ev] }
+                await db.cases.put(next)
+                setC(next)
+                setOk(true)
+              })()
+            }}
+          >
+            Repair demo
+          </button>
+        </section>
+      )}
     </div>
   )
 }

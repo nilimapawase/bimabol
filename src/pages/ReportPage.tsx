@@ -47,9 +47,16 @@ export function ReportPage() {
   }
 
   const saveGap = () => {
-    if (gapField === 'crop') setDraft((d) => ({ ...d, crop: gapValue as CropId }))
-    if (gapField === 'village') setDraft((d) => ({ ...d, village: gapValue }))
-    if (gapField === 'time') setDraft((d) => ({ ...d, eventTimeIso: gapValue }))
+    const parsed = parseFreeReport(gapValue)
+    if (gapField === 'crop')
+      setDraft((d) => ({ ...d, crop: parsed.crop ?? (gapValue as CropId) }))
+    if (gapField === 'village')
+      setDraft((d) => ({ ...d, village: parsed.village ?? gapValue }))
+    if (gapField === 'time')
+      setDraft((d) => ({
+        ...d,
+        eventTimeIso: parsed.eventTimeIso ?? gapValue,
+      }))
     setGapValue('')
     setGapsAsked((n) => n + 1)
     setGapField(null)

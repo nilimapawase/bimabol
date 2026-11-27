@@ -8,8 +8,8 @@ Update this file after every step: tick the box, set **Completed at**, then reco
 
 | Metric | Value |
 |--------|--------|
-| **Round 2 overall** | **10 / 28** complete |
-| **Day 1 — Fri 27 Nov 2026** | **10 / 12** |
+| **Round 2 overall** | **11 / 28** complete |
+| **Day 1 — Fri 27 Nov 2026** | **11 / 12** |
 | **Day 2 — Sat 28 Nov** | **0 / 8** |
 | **Day 3 — Sun 29 Nov** | **0 / 6** |
 | **Buffer — Mon 30 Nov** | **0 / 2** |
@@ -28,7 +28,7 @@ Update this file after every step: tick the box, set **Completed at**, then reco
 | D1-01 | Tools check, baseline commit, `main`, empty GitHub `bimabol` remote | You | [x] | 2026-11-27 | Runbook **§S0** — baseline + feature commits; **add remote + push** |
 | D1-02 | Chat **A1** core app + Vitest | Agent | [x] | 2026-11-27 | Single agent pass |
 | D1-03 | Chat **B** Docker, CI, DECK, DEMO_SCRIPT | Agent | [x] | 2026-11-27 | |
-| D1-04 | Local `npm install`, `npm run build`, `npm test` | You | [x] | 2026-11-27 | All pass |
+| D1-04 | Local `npm install`, `npm run build`, `npm test` | You | [x] | 2026-11-27 | 17 tests pass |
 | D1-05 | **Gate 1** — secret scan, commit, push | You | [ ] | | Runbook **§GATE1** — committed locally; **push pending** |
 | D1-06 | Chat **A2** case, ticket, evidence, export | Agent | [x] | 2026-11-27 | |
 | D1-07 | **Gate 2** — typed full flow (§10.1) | You | [ ] | | Runbook **§GATE2** |

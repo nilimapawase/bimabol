@@ -24,16 +24,16 @@ export async function wipeAllData(): Promise<void> {
   await db.profiles.clear()
   await db.photos.clear()
   clearPrivacyStore()
+  localStorage.removeItem(ACTIVE_PROFILE_KEY)
   if ('caches' in window) {
     const keys = await caches.keys()
     await Promise.all(keys.map((k) => caches.delete(k)))
   }
 }
 
-export async function getActiveProfileId(): Promise<string> {
-  const key = 'bimabol-active-profile'
-  const existing = localStorage.getItem(key)
-  if (existing) return existing
+const ACTIVE_PROFILE_KEY = 'bimabol-active-profile'
+
+export async function ensureDemoProfiles(): Promise<void> {
   const demo: Profile = {
     id: 'demo-farmer',
     name: 'डेमो डेटा — राजू पाटील',
@@ -42,9 +42,35 @@ export async function getActiveProfileId(): Promise<string> {
     bankBranch: 'डेमो शाखा',
     demo: true,
   }
-  await db.profiles.put(demo)
-  localStorage.setItem(key, demo.id)
-  return demo.id
+  const op: Profile = {
+    id: 'operator-1',
+    name: 'ऑपरेटर — सीएससी',
+    mobile: '9123456780',
+    policyNumber: '',
+    bankBranch: '',
+  }
+  await db.profiles.bulkPut([demo, op])
+}
+
+export async function getActiveProfileId(): Promise<string> {
+  await ensureDemoProfiles()
+  const existing = localStorage.getItem(ACTIVE_PROFILE_KEY)
+  if (existing) return existing
+  localStorage.setItem(ACTIVE_PROFILE_KEY, 'demo-farmer')
+  return 'demo-farmer'
+}
+
+export function setActiveProfileId(id: string): void {
+  localStorage.setItem(ACTIVE_PROFILE_KEY, id)
+}
+
+export async function listProfiles(): Promise<Profile[]> {
+  await ensureDemoProfiles()
+  return db.profiles.toArray()
+}
+
+export async function upsertProfile(profile: Profile): Promise<void> {
+  await db.profiles.put(profile)
 }
 
 export async function listCases(profileId: string): Promise<CaseRecord[]> {

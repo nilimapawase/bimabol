@@ -1,6 +1,10 @@
-# Voice-first starter kit
+# BimaBol (७२ तास)
 
-Marathi-first, installable PWA for hackathon demos: mic in, speech out, configurable steps, tiny local parser, localStorage only. No backend, login, analytics, or stored audio.
+Marathi-first voice PWA for the PMFBY 72-hour crop-loss reporting window. Speaks or types the loss, confirms a record, runs a conservative clock, script for **14447**, ticket capture, evidence, tamper-evident log. **Not** a claim filer.
+
+## What is new in Round 2
+
+Starter kit speech/parse/flow → Dexie, hash-chained log, report/case routes, Docker, CI, Vitest (`npm test`).
 
 ## Run locally
 

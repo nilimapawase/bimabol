@@ -1,7 +1,7 @@
 import { appendEvent } from '../domain/hashChain'
 import { parseFreeReport } from '../parse/reportParser'
 import type { CropId, LossId } from '../parse/vocab'
-import { db, getActiveProfileId, saveCase } from './database'
+import { db, getActiveProfileId, saveCase, upsertProfile } from './database'
 import type { CaseRecord } from './types'
 
 export type ReportDraft = {
@@ -30,6 +30,14 @@ export async function createCaseFromDraft(
 ): Promise<CaseRecord> {
   const profileId = await getActiveProfileId()
   const profile = await db.profiles.get(profileId)
+  if (profile && (draft.mobile || draft.policy || draft.bankBranch)) {
+    await upsertProfile({
+      ...profile,
+      mobile: draft.mobile ?? profile.mobile,
+      policyNumber: draft.policy ?? profile.policyNumber,
+      bankBranch: draft.bankBranch ?? profile.bankBranch,
+    })
+  }
   const parsed = draft.freeText ? parseFreeReport(draft.freeText) : {}
   const eventTimeIso =
     draft.eventTimeIso ?? parsed.eventTimeIso ?? nowIso
@@ -40,6 +48,9 @@ export async function createCaseFromDraft(
     createdAt: nowIso,
     forOtherFarmer: draft.forOther,
     otherFarmerName: draft.otherName,
+    mobile: draft.mobile ?? profile?.mobile,
+    policyNumber: draft.policy ?? profile?.policyNumber,
+    bankBranch: draft.bankBranch ?? profile?.bankBranch,
     crop: draft.crop ?? parsed.crop,
     village: draft.village ?? parsed.village,
     taluka: draft.taluka,
@@ -75,14 +86,14 @@ export async function createCaseFromDraft(
 }
 
 export function validateTicket(raw: string): boolean {
-  const t = raw.replace(/[\s-]/g, '')
+  const t = raw.trim()
   return /^[A-Za-z0-9]{4,30}$/.test(t)
 }
 
 export async function saveTicket(caseId: string, ticket: string): Promise<void> {
   const c = await db.cases.get(caseId)
   if (!c) return
-  const cleaned = ticket.replace(/[\s-]/g, '')
+  const cleaned = ticket.trim()
   const now = istNow()
   const ev = await appendEvent(c.events, 'ticket_saved', { ticket: cleaned }, now)
   c.ticket = cleaned

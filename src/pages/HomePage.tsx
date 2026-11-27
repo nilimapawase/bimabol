@@ -2,23 +2,69 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SafetyBanner } from '../components/SafetyBanner'
 import { ClockDisplay } from '../components/ClockDisplay'
-import { getActiveProfileId, listCases } from '../db/database'
-import type { CaseRecord } from '../db/types'
+import {
+  getActiveProfileId,
+  listCases,
+  listProfiles,
+  setActiveProfileId,
+  upsertProfile,
+} from '../db/database'
+import type { CaseRecord, Profile } from '../db/types'
 import { cropLabel, lossLabel } from '../parse/reportParser'
 
 export function HomePage() {
   const [cases, setCases] = useState<CaseRecord[]>([])
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [activeId, setActiveId] = useState('')
+
+  const reload = async () => {
+    const pid = await getActiveProfileId()
+    setActiveId(pid)
+    setProfiles(await listProfiles())
+    setCases(await listCases(pid))
+  }
 
   useEffect(() => {
-    void (async () => {
-      const pid = await getActiveProfileId()
-      setCases(await listCases(pid))
-    })()
+    void reload()
   }, [])
+
+  const switchProfile = (id: string) => {
+    setActiveProfileId(id)
+    setActiveId(id)
+    void listCases(id).then(setCases)
+  }
+
+  const addProfile = () => {
+    const name = prompt('शेतकऱ्याचे नाव / farmer name')
+    if (!name?.trim()) return
+    const mobile = prompt('१० अंकी मोबाईल (optional)') ?? ''
+    const id = crypto.randomUUID()
+    void upsertProfile({ id, name: name.trim(), mobile: mobile.trim() }).then(reload)
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <SafetyBanner />
+      <section className="rounded-xl border border-slate-700 p-4">
+        <h2 className="text-lg font-semibold">ऑपरेटर / प्रोफाइल</h2>
+        <ul className="mt-2 flex flex-col gap-2">
+          {profiles.map((p) => (
+            <li key={p.id}>
+              <button
+                type="button"
+                className={`btn w-full text-left ${activeId === p.id ? 'primary' : ''}`}
+                onClick={() => switchProfile(p.id)}
+              >
+                {p.demo ? 'डेमो डेटा — ' : ''}
+                {p.name} ({p.mobile || '—'})
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button type="button" className="btn mt-3" onClick={addProfile}>
+          + नवीन प्रोफाइल
+        </button>
+      </section>
       <Link
         to="/report"
         className="block rounded-2xl border-2 border-sky-500 bg-sky-950 px-6 py-6 text-center text-2xl font-bold text-sky-100"
