@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ParseKind } from '../config/steps'
 import { parseAnswer } from '../parse/index'
+import { parseFreeReport } from '../parse/reportParser'
 
 const DEMO_KINDS: { value: ParseKind; label: string }[] = [
   { value: 'text', label: 'text' },
@@ -153,6 +154,24 @@ export function DemoPage() {
       <pre className="overflow-x-auto rounded-xl border border-slate-700 bg-slate-950 p-4 text-base">
         {JSON.stringify(result, null, 2)}
       </pre>
+
+      <section className="mt-6 border-t border-slate-700 pt-4">
+        <h2 className="text-xl font-bold">२५ वाक्य पार्स (report)</h2>
+        <p className="text-slate-400">डेमो डेटा — parser JSON below.</p>
+        <button
+          type="button"
+          className="btn primary mt-2"
+          onClick={() =>
+            setResult(
+              parseFreeReport(
+                'आज सकाळी गारपीट झाली, माझ्या सोयाबीनचे नुकसान झाले, गाव खेडगाव.',
+              ),
+            )
+          }
+        >
+          Test soybean hail sentence
+        </button>
+      </section>
     </div>
   )
 }
